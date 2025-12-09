@@ -7,21 +7,15 @@ from PIL import Image
 from google import genai
 from google.genai import types
 
-# import warnings
-# warnings.filterwarnings(
-#     "ignore",
-#     message="IMAGE_OTHER is not a valid FinishReason"
-# )
-
 # =========================
 #  GEMINI API AYARI
 # =========================
 # Öncelik: Streamlit Cloud secrets
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", None)
 
-# Lokal geliştirme için: ortam değişkeni
+# Eğer istersen lokal geliştirme için ortam değişkenini açabilirsin:
 # if not GEMINI_API_KEY:
- #   GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+#     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 if not GEMINI_API_KEY:
     raise RuntimeError(
@@ -31,7 +25,40 @@ if not GEMINI_API_KEY:
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+# =========================
+#  STREAMLIT CONFIG
+# =========================
+st.set_page_config(page_title="Gemini Lingerie Studio", layout="wide")
 
+# =========================
+#  BASİT LOGIN / ŞİFRE KORUMASI
+# =========================
+APP_PASSWORD = st.secrets.get("APP_PASSWORD", None) or os.getenv("APP_PASSWORD", "")
+
+if not APP_PASSWORD:
+    raise RuntimeError(
+        "APP_PASSWORD tanımlı değil. "
+        "Bu uygulamayı sadece belirli kişilerin kullanmasını istiyorsan "
+        "Streamlit secrets veya ortam değişkeni olarak APP_PASSWORD eklemelisin."
+    )
+
+# Session'da login durumu
+if "auth_ok" not in st.session_state:
+    st.session_state["auth_ok"] = False
+
+if not st.session_state["auth_ok"]:
+    st.title("🔒 G Lingerie Studio – Yetkili Erişim")
+    pwd = st.text_input("Erişim şifresi", type="password")
+
+    if st.button("Giriş yap"):
+        if pwd == APP_PASSWORD:
+            st.session_state["auth_ok"] = True
+            st.experimental_rerun()
+        else:
+            st.error("Yanlış şifre. Lütfen tekrar deneyin.")
+
+    # Şifre ekranından aşağıya kimse geçmesin
+    st.stop()
 
 # =========================
 #  MEMORY / BAĞLAM
@@ -126,9 +153,8 @@ def part_to_streamlit_image(part):
 
 
 # =========================
-#  STREAMLIT UI
+#  ANA UI
 # =========================
-st.set_page_config(page_title="Gemini Lingerie Studio", layout="wide")
 st.title("👗 G Lingerie Studio (Gemini + Memory)")
 
 with st.sidebar:
