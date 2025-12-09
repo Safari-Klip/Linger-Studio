@@ -25,9 +25,6 @@ if not GEMINI_API_KEY:
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# =========================
-#  STREAMLIT CONFIG
-# =========================
 st.set_page_config(page_title="Gemini Lingerie Studio", layout="wide")
 
 # =========================
@@ -37,28 +34,30 @@ APP_PASSWORD = st.secrets.get("APP_PASSWORD", None) or os.getenv("APP_PASSWORD",
 
 if not APP_PASSWORD:
     raise RuntimeError(
-        "APP_PASSWORD tanımlı değil. "
-        "Bu uygulamayı sadece belirli kişilerin kullanmasını istiyorsan "
-        "Streamlit secrets veya ortam değişkeni olarak APP_PASSWORD eklemelisin."
+        "APP_PASSWORD tanımlı değil. Streamlit Cloud secrets veya ortam değişkeni olarak APP_PASSWORD eklemelisin."
     )
 
-# Session'da login durumu
 if "auth_ok" not in st.session_state:
     st.session_state["auth_ok"] = False
 
 if not st.session_state["auth_ok"]:
     st.title("🔒 G Lingerie Studio – Yetkili Erişim")
-    pwd = st.text_input("Erişim şifresi", type="password")
 
-    if st.button("Giriş yap"):
+    pwd = st.text_input("Erişim şifresi", type="password")
+    login_clicked = st.button("Giriş yap")
+
+    if login_clicked:
         if pwd == APP_PASSWORD:
             st.session_state["auth_ok"] = True
-            st.rerun()
+            st.success("Giriş başarılı ✅")
+            # DİKKAT: burada st.stop() demiyoruz, aşağıdaki app kodu bu run'da çalışsın
         else:
             st.error("Yanlış şifre. Lütfen tekrar deneyin.")
+            st.stop()
+    else:
+        # henüz butona basılmadıysa app'in geri kalanı hiç çalışmasın
+        st.stop()
 
-    # Şifre ekranından aşağıya kimse geçmesin
-    st.stop()
 
 # =========================
 #  MEMORY / BAĞLAM
