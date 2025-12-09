@@ -53,7 +53,7 @@ if not st.session_state["auth_ok"]:
     if st.button("Giriş yap"):
         if pwd == APP_PASSWORD:
             st.session_state["auth_ok"] = True
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Yanlış şifre. Lütfen tekrar deneyin.")
 
