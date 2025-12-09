@@ -33,30 +33,28 @@ st.set_page_config(page_title="Gemini Lingerie Studio", layout="wide")
 APP_PASSWORD = st.secrets.get("APP_PASSWORD", None) or os.getenv("APP_PASSWORD", "")
 
 if not APP_PASSWORD:
-    raise RuntimeError(
-        "APP_PASSWORD tanımlı değil. Streamlit Cloud secrets veya ortam değişkeni olarak APP_PASSWORD eklemelisin."
-    )
+    raise RuntimeError("APP_PASSWORD tanımlı değil. Secrets'e eklemelisin.")
 
+# Session state'te login durumu saklanır
 if "auth_ok" not in st.session_state:
     st.session_state["auth_ok"] = False
 
+# Eğer henüz login değilse:
 if not st.session_state["auth_ok"]:
     st.title("🔒 G Lingerie Studio – Yetkili Erişim")
 
     pwd = st.text_input("Erişim şifresi", type="password")
-    login_clicked = st.button("Giriş yap")
+    login_button = st.button("Giriş yap")
 
-    if login_clicked:
+    if login_button:
         if pwd == APP_PASSWORD:
             st.session_state["auth_ok"] = True
-            st.success("Giriş başarılı ✅")
-            # DİKKAT: burada st.stop() demiyoruz, aşağıdaki app kodu bu run'da çalışsın
+            st.success("Giriş başarılı! Yükleniyor...")
+            st.rerun()   # SAYFAYI TEMİZ BİR ŞEKİLDE YENİDEN AÇAR
         else:
             st.error("Yanlış şifre. Lütfen tekrar deneyin.")
-            st.stop()
-    else:
-        # henüz butona basılmadıysa app'in geri kalanı hiç çalışmasın
-        st.stop()
+
+    st.stop()  # Login başarısız veya daha giriş yapılmamış → uygulamanın devamı render edilmez
 
 
 # =========================
