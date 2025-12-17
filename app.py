@@ -92,6 +92,29 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
             "clean catalog-style composition"
         )
 
+    #Side/Yön
+    if side_view == "Ön":
+        parts.append(
+            "front-facing view of the female model, facing the camera directly, "
+            "clear and unobstructed view of the garment, symmetrical presentation, "
+            "ideal for e-commerce product display, neutral and natural posture"
+    )
+
+    elif side_view == "Sol çapraz":
+        parts.append(
+            "three-quarter angle view from the left side, female model slightly turned, "
+            "showing both front and side of the garment, natural relaxed posture, "
+            "enhances depth and fabric drape, suitable for lingerie and sleepwear catalog"
+    )
+
+
+    elif side_view == "Arka":
+        parts.append(
+            "back view of the female model, facing away from the camera, "
+            "clear visibility of the back design of the garment, straps, seams, and fit, "
+            "neutral posture, professional catalog presentation"
+    )
+
     # Ortam
     if scene_style == "E-commerce studio":
         parts.append(
@@ -182,6 +205,11 @@ with st.sidebar:
     shot_type = st.selectbox(
         "Kadraj / shot type",
         ["Full body", "Upper body", "Lower body"],
+    )
+
+    side_view = st.selectbox(
+        "Side / Yön",
+        ["Ön", "Sol çapraz", "Arka"],
     )
 
     scene_style = st.selectbox(
