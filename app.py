@@ -181,7 +181,7 @@ with st.sidebar:
 
     shot_type = st.selectbox(
         "Kadraj / shot type",
-        ["Full body", "Half body", "Close-up"],
+        ["Full body", "Upper body", "Lower body"],
     )
 
     scene_style = st.selectbox(
