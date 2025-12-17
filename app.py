@@ -71,12 +71,26 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
     parts = []
 
     # Kadraj
-    if shot_type == "Full body":
-        parts.append("full body shot of a female model")
-    elif shot_type == "Half body":
-        parts.append("mid-shot from head to hips of a female model")
-    else:
-        parts.append("close-up shot focusing on the lingerie area of a female model")
+if shot_type == "Full body":
+    parts.append(
+        "full body fashion shot of a female model, standing naturally, "
+        "entire outfit visible from head to toe, balanced proportions, "
+        "catalog-style composition"
+    )
+
+elif shot_type == "Upper body":
+    parts.append(
+        "upper body fashion shot of a female model, framed from shoulders to waist, "
+        "clear focus on the top garment, natural posture, clean and professional "
+        "e-commerce composition"
+    )
+
+elif shot_type == "Lower body":
+    parts.append(
+        "lower body fashion shot of a female model, framed from waist to mid-thigh or knees, "
+        "clear focus on the bottom garment, accurate fit and fabric details, "
+        "clean catalog-style composition"
+    )
 
     # Ortam
     if scene_style == "E-commerce studio":
