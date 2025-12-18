@@ -224,7 +224,7 @@ with st.sidebar:
 
     aspect_ratio = st.selectbox(
         "Görsel oranı (şimdilik sadece prompt'ta kullanılıyor)",
-        ["1:1","10:13","4:5", "3:4", "9:16", "16:9","5:6"],
+        ["1:1","4:5", "3:4", "9:16", "16:9","5:6","10:13"],
     )
 
     resolution = st.selectbox(
