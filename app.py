@@ -10,7 +10,7 @@ from google.genai import types
 # =========================
 #  GEMINI API AYARI
 # =========================
-GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", None)
+_API_KEY = st.secrets.get("GEMINI_API_KEY", None)
 
 # Lokal geliştirme için istersen aç:
 # if not GEMINI_API_KEY:
