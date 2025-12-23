@@ -15,7 +15,7 @@ GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", None)
 
 # Eğer istersen lokal geliştirme için ortam değişkenini açabilirsin:
 # if not GEMINI_API_KEY:
-#     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+# GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 if not GEMINI_API_KEY:
     raise RuntimeError(
@@ -30,31 +30,31 @@ st.set_page_config(page_title="Gemini Lingerie Studio", layout="wide")
 # =========================
 #  BASİT LOGIN / ŞİFRE KORUMASI
 # =========================
-APP_PASSWORD = st.secrets.get("APP_PASSWORD", None) or os.getenv("APP_PASSWORD", "")
+ APP_PASSWORD = st.secrets.get("APP_PASSWORD", None) or os.getenv("APP_PASSWORD", "")
 
-if not APP_PASSWORD:
-    raise RuntimeError("APP_PASSWORD tanımlı değil. Secrets'e eklemelisin.")
+ if not APP_PASSWORD:
+     raise RuntimeError("APP_PASSWORD tanımlı değil. Secrets'e eklemelisin.")
 
-# Session state'te login durumu saklanır
-if "auth_ok" not in st.session_state:
-    st.session_state["auth_ok"] = False
+# # Session state'te login durumu saklanır
+ if "auth_ok" not in st.session_state:
+     st.session_state["auth_ok"] = False
 
-# Eğer henüz login değilse:
-if not st.session_state["auth_ok"]:
-    st.title("🔒 G Lingerie Studio – Yetkili Erişim")
+ # Eğer henüz login değilse:
+ if not st.session_state["auth_ok"]:
+     st.title("🔒 G Lingerie Studio – Yetkili Erişim")
 
-    pwd = st.text_input("Erişim şifresi", type="password")
-    login_button = st.button("Giriş yap")
+     pwd = st.text_input("Erişim şifresi", type="password")
+     login_button = st.button("Giriş yap")
 
-    if login_button:
-        if pwd == APP_PASSWORD:
-            st.session_state["auth_ok"] = True
-            st.success("Giriş başarılı! Yükleniyor...")
-            st.rerun()   # SAYFAYI TEMİZ BİR ŞEKİLDE YENİDEN AÇAR
-        else:
-            st.error("Yanlış şifre. Lütfen tekrar deneyin.")
+     if login_button:
+         if pwd == APP_PASSWORD:
+             st.session_state["auth_ok"] = True
+             st.success("Giriş başarılı! Yükleniyor...")
+             st.rerun()   # SAYFAYI TEMİZ BİR ŞEKİLDE YENİDEN AÇAR
+         else:
+             st.error("Yanlış şifre. Lütfen tekrar deneyin.")
 
-    st.stop()  # Login başarısız veya daha giriş yapılmamış → uygulamanın devamı render edilmez
+     st.stop()  # Login başarısız veya daha giriş yapılmamış → uygulamanın devamı render edilmez
 
 
 # =========================
@@ -67,6 +67,52 @@ if "history" not in st.session_state:
 # =========================
 #  PROMPT BUILDER
 # =========================
+
+SYSTEM_PROMPT = """
+You are a professional fashion image generation system specialized in e-commerce product visualization.
+
+CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
+
+1. REFERENCE IMAGE HANDLING
+- Product reference images may include a human model.
+- From product reference images, you must extract and use ONLY the garment itself:
+  garment design, color, fabric, texture, and construction details.
+- Any human model present in product reference images MUST be completely ignored.
+- Do NOT reuse or imitate the face, body, pose, hairstyle, skin tone, or identity of the model shown.
+
+2. MODEL REFERENCE HANDLING
+- If separate model reference images are provided, use them ONLY as a general reference
+  for body proportions, pose direction, and viewing angle.
+- Do NOT copy or replicate the exact identity.
+
+3. STRICT SEPARATION RULE
+- The garment and the model are two fully independent entities.
+- Garment information comes ONLY from product reference images and text.
+- Model appearance comes ONLY from model reference images (if provided) and prompt instructions.
+
+4. MODEL GENERATION RULE
+- Always generate a DIFFERENT female model wearing the same garment.
+- Never reuse the same model identity across generations unless explicitly instructed.
+
+5. OUTPUT STYLE
+- Professional e-commerce fashion catalog photography
+- Neutral, non-sexualized pose
+- Product-focused composition
+- Accurate garment representation
+"""
+
+def pil_to_part(img: Image.Image) -> types.Part:
+    """PIL Image -> Gemini inline image part"""
+    buf = BytesIO()
+    # PNG güvenli, şeffaflık vs. için iyi
+    img.convert("RGB").save(buf, format="PNG")
+    return types.Part(
+        inline_data=types.Blob(
+            mime_type="image/png",
+            data=buf.getvalue()
+        )
+    )
+
 def build_prompt(product_text, shot_type, scene_style, extra_notes):
     parts = []
 
@@ -156,7 +202,7 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
     return ", ".join(parts)
 
 
-def history_entry(product_text, shot_type, scene_style, extra_notes):
+def history_entry(product_text,shot_type,side_view, scene_style, extra_notes):
     return (
         f"[SHOT={shot_type}, SCENE={scene_style}] "
         f"PRODUCT: {product_text or '-'} "
@@ -296,38 +342,69 @@ if generate_btn:
     else:
         try:
             # 1) Bu isteği history'e ekle
-            entry = history_entry(product_text, shot_type, scene_style, extra_notes)
+            entry = history_entry(product_text, shot_type,side_view,scene_style, extra_notes)
             st.session_state["history"].append(entry)
 
             # 2) Prompt'u hazırla
             base_prompt = build_prompt(product_text, shot_type, scene_style, extra_notes)
             base_prompt += f", aspect ratio {aspect_ratio}, target resolution {resolution}."
 
+            # --- Görselleri oku (PIL) ---
+            pil_product_images = [Image.open(f) for f in (product_files or [])[:3]]
+            pil_model_images   = [Image.open(f) for f in (model_files or [])[:5]]
             # 3) contents dizisini hazırlayalım
             contents = []
-
-            if use_context:
-                for h in st.session_state["history"][:-1]:  # son entry şu anki istek
-                    contents.append(
-                        f"Previous request style and preferences "
-                        f"(use for consistency, do not repeat): {h}"
+            
+            contents.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part(text="SYSTEM INSTRUCTIONS (follow strictly):\n" + SYSTEM_PROMPT)]
                     )
-
-            # Şu anki asıl prompt
-            contents.append(base_prompt)
-
-            # Referans görselleri ekle
-            pil_images = []
-
-            if product_files:
-                for f in product_files[:3]:
-                    pil_images.append(Image.open(f))
-
-            if model_files:
-                for f in model_files[:5]:
-                    pil_images.append(Image.open(f))
-
-            contents.extend(pil_images)
+                )
+            
+            # 2) Geçmiş bağlam (opsiyonel)
+            if use_context:
+                for h in st.session_state["history"][:-1]:
+                    contents.append(
+                        types.Content(
+                            role="user",
+                            parts=[types.Part(text=f"Previous request preferences (for consistency, do not repeat): {h}")]
+                            )
+                        )
+                    
+                    
+            # 3) Asıl kullanıcı promptu
+            contents.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part(text=base_prompt)]
+                    )
+                )
+            
+            
+            # 4) Ürün görselleri (sadece ürün detayları için)
+            if pil_product_images:
+                contents.append(
+                    types.Content(
+                        role="user",
+                        parts=[types.Part(text="PRODUCT REFERENCE IMAGES (use ONLY garment details; ignore any human model in these images):")]
+                        )
+                    )
+                for img in pil_product_images:
+                    contents.append(types.Content(role="user", parts=[pil_to_part(img)]))
+                    
+                    
+            # 5) Manken görselleri (sadece manken referansı için)
+            if pil_model_images:
+                contents.append(
+                    types.Content(
+                        role="user",
+                        parts=[types.Part(text="MODEL REFERENCE IMAGES (use ONLY as body/pose/angle reference; do not copy identity):")]
+                        )
+                    )
+                for img in pil_model_images:
+                    contents.append(types.Content(role="user", parts=[pil_to_part(img)]))
+        
 
             # 4) Gemini'yi çağır
             with st.spinner("Gemini ile görsel üretiliyor..."):
@@ -335,6 +412,26 @@ if generate_btn:
                     model=model_name,
                     contents=contents,
                 )
+                
+                
+            if pil_product_images:
+                contents.append(
+                    types.Content(
+                        role="user",
+                        parts=[types.Part(text="PRODUCT REFERENCE IMAGES (use ONLY garment details; ignore any human model in these images):")]
+                            + [pil_to_part(img) for img in pil_product_images]
+                            )
+                    )
+
+            if pil_model_images:
+                contents.append(
+                    types.Content(
+                        role="user",
+                        parts=[types.Part(text="MODEL REFERENCE IMAGES (use ONLY as body/pose/angle reference; do not copy identity):")]
+                        + [pil_to_part(img) for img in pil_model_images]
+                        )
+                    )
+
 
             # 5) Görselleri çek (yeni SDK: candidates[*].content.parts)
             all_parts = []
