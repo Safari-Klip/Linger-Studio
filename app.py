@@ -30,31 +30,31 @@ st.set_page_config(page_title="Gemini Lingerie Studio", layout="wide")
 # =========================
 #  BASİT LOGIN / ŞİFRE KORUMASI
 # =========================
- APP_PASSWORD = st.secrets.get("APP_PASSWORD", None) or os.getenv("APP_PASSWORD", "")
+APP_PASSWORD = st.secrets.get("APP_PASSWORD", None) or os.getenv("APP_PASSWORD", "")
 
- if not APP_PASSWORD:
-     raise RuntimeError("APP_PASSWORD tanımlı değil. Secrets'e eklemelisin.")
+if not APP_PASSWORD:
+    raise RuntimeError("APP_PASSWORD tanımlı değil. Secrets'e eklemelisin.")
 
 # # Session state'te login durumu saklanır
- if "auth_ok" not in st.session_state:
-     st.session_state["auth_ok"] = False
+if "auth_ok" not in st.session_state:
+    st.session_state["auth_ok"] = False
 
  # Eğer henüz login değilse:
- if not st.session_state["auth_ok"]:
-     st.title("🔒 G Lingerie Studio – Yetkili Erişim")
+if not st.session_state["auth_ok"]:
+    st.title("🔒 G Lingerie Studio – Yetkili Erişim")
 
-     pwd = st.text_input("Erişim şifresi", type="password")
-     login_button = st.button("Giriş yap")
+    pwd = st.text_input("Erişim şifresi", type="password")
+    login_button = st.button("Giriş yap")
 
-     if login_button:
-         if pwd == APP_PASSWORD:
-             st.session_state["auth_ok"] = True
-             st.success("Giriş başarılı! Yükleniyor...")
-             st.rerun()   # SAYFAYI TEMİZ BİR ŞEKİLDE YENİDEN AÇAR
-         else:
-             st.error("Yanlış şifre. Lütfen tekrar deneyin.")
+    if login_button:
+        if pwd == APP_PASSWORD:
+            st.session_state["auth_ok"] = True
+            st.success("Giriş başarılı! Yükleniyor...")
+            st.rerun()   # SAYFAYI TEMİZ BİR ŞEKİLDE YENİDEN AÇAR
+        else:
+            st.error("Yanlış şifre. Lütfen tekrar deneyin.")
 
-     st.stop()  # Login başarısız veya daha giriş yapılmamış → uygulamanın devamı render edilmez
+    st.stop()  # Login başarısız veya daha giriş yapılmamış → uygulamanın devamı render edilmez
 
 
 # =========================
