@@ -10,10 +10,9 @@ from google.genai import types
 # =========================
 #  GEMINI API AYARI
 # =========================
-# Öncelik: Streamlit Cloud secrets
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", None)
 
-# Eğer istersen lokal geliştirme için ortam değişkenini açabilirsin:
+# Lokal geliştirme için istersen aç:
 # if not GEMINI_API_KEY:
 #     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
@@ -31,15 +30,12 @@ st.set_page_config(page_title="Gemini Lingerie Studio", layout="wide")
 #  BASİT LOGIN / ŞİFRE KORUMASI
 # =========================
 APP_PASSWORD = st.secrets.get("APP_PASSWORD", None) or os.getenv("APP_PASSWORD", "")
-
 if not APP_PASSWORD:
     raise RuntimeError("APP_PASSWORD tanımlı değil. Secrets'e eklemelisin.")
 
-# Session state'te login durumu saklanır
 if "auth_ok" not in st.session_state:
     st.session_state["auth_ok"] = False
 
-# Eğer henüz login değilse:
 if not st.session_state["auth_ok"]:
     st.title("🔒 G Lingerie Studio – Yetkili Erişim")
 
@@ -50,131 +46,144 @@ if not st.session_state["auth_ok"]:
         if pwd == APP_PASSWORD:
             st.session_state["auth_ok"] = True
             st.success("Giriş başarılı! Yükleniyor...")
-            st.rerun()   # SAYFAYI TEMİZ BİR ŞEKİLDE YENİDEN AÇAR
+            st.rerun()
         else:
             st.error("Yanlış şifre. Lütfen tekrar deneyin.")
 
-    st.stop()  # Login başarısız veya daha giriş yapılmamış → uygulamanın devamı render edilmez
+    st.stop()
 
+# =========================
+#  SYSTEM PROMPT (ÜRÜN vs MANKEN AYRIMI)
+# =========================
+SYSTEM_PROMPT = """
+You are a professional fashion image generation system specialized in e-commerce product visualization.
+
+CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
+
+1. REFERENCE IMAGE HANDLING (PRODUCT IMAGES)
+- Product reference images may include a human model.
+- From product reference images, you must extract and use ONLY the garment itself:
+  garment design, color, fabric, texture, and construction details.
+- Any human model present in product reference images MUST be completely ignored.
+- Do NOT reuse or imitate the face, body, pose, hairstyle, skin tone, or identity of any model shown in product reference images.
+
+2. MODEL REFERENCE HANDLING (MODEL IMAGES)
+- If separate model reference images are provided, use them ONLY as a general reference for:
+  body proportions, pose direction, and viewing angle.
+- Do NOT replicate the exact identity, face, or personal attributes unless explicitly requested.
+- Prioritize creating a new identity over similarity to any reference.
+
+3. STRICT SEPARATION RULE
+- The garment and the model must be treated as two fully independent entities.
+- Garment information comes ONLY from product reference images and text.
+- Model appearance guidance comes ONLY from model reference images (if provided) and prompt instructions.
+
+4. MODEL GENERATION RULE
+- Always generate a DIFFERENT female model wearing the same garment.
+- Never reuse the same model identity across generations unless explicitly instructed.
+
+5. OUTPUT STYLE REQUIREMENTS
+- Professional e-commerce fashion catalog photography
+- Neutral, non-sexualized pose
+- Product-focused composition
+- Realistic proportions and fit
+- Accurate garment representation without creative alterations
+"""
 
 # =========================
 #  MEMORY / BAĞLAM
 # =========================
 if "history" not in st.session_state:
-    st.session_state["history"] = []  # her eleman bir string: "Ürün: ..., Ayarlar: ..."
-
+    st.session_state["history"] = []
 
 # =========================
 #  PROMPT BUILDER
 # =========================
-def build_prompt(product_text, shot_type, scene_style, extra_notes):
+def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes):
     parts = []
 
     # Kadraj
     if shot_type == "Full body":
         parts.append(
             "full body fashion shot of a female model, standing naturally, "
-            "entire outfit visible from head to toe, balanced proportions, "
-            "catalog-style composition"
+            "entire outfit visible from head to toe, balanced proportions, catalog-style composition"
         )
-
     elif shot_type == "Upper body":
         parts.append(
             "upper body fashion shot of a female model, framed from shoulders to waist, "
-            "clear focus on the top garment, natural posture, clean and professional "
-            "e-commerce composition"
+            "clear focus on the top garment, natural posture, clean professional e-commerce composition"
         )
-
-    elif shot_type == "Lower body":
+    else:  # Lower body
         parts.append(
             "lower body fashion shot of a female model, framed from waist to mid-thigh or knees, "
-            "clear focus on the bottom garment, accurate fit and fabric details, "
-            "clean catalog-style composition"
+            "clear focus on the bottom garment, accurate fit and fabric details, clean catalog composition"
         )
 
-    #Side/Yön
+    # Side / Yön
     if side_view == "Ön":
         parts.append(
-            "front-facing view of the female model, facing the camera directly, "
-            "clear and unobstructed view of the garment, symmetrical presentation, "
-            "ideal for e-commerce product display, neutral and natural posture"
-    )
-
+            "front-facing view, facing the camera directly, clear unobstructed view of the garment, "
+            "symmetrical presentation, neutral natural posture"
+        )
     elif side_view == "Sol çapraz":
         parts.append(
-            "three-quarter angle view from the left side, female model slightly turned, "
-            "showing both front and side of the garment, natural relaxed posture, "
-            "enhances depth and fabric drape, suitable for lingerie and sleepwear catalog"
-    )
-
-
-    elif side_view == "Arka":
+            "three-quarter angle view from the left, slightly turned, showing both front and side, "
+            "natural relaxed posture, shows fabric drape and fit clearly"
+        )
+    else:  # Arka
         parts.append(
-            "back view of the female model, facing away from the camera, "
-            "clear visibility of the back design of the garment, straps, seams, and fit, "
-            "neutral posture, professional catalog presentation"
-    )
+            "back view, facing away from the camera, clear visibility of back design, straps, seams, and fit, "
+            "neutral professional catalog presentation"
+        )
 
     # Ortam
     if scene_style == "E-commerce studio":
         parts.append(
-            "in a professional e-commerce studio, clean white seamless background, "
-            "even softbox lighting, no props"
+            "professional e-commerce studio, clean white seamless background, soft even lighting, no props"
         )
     elif scene_style == "Lifestyle (yatak odası)":
-        parts.append(
-            "in a cozy modern bedroom, soft natural window light, neutral colors"
-        )
+        parts.append("cozy modern bedroom setting, soft natural window light, neutral colors")
     elif scene_style == "Lifestyle (spor salonu)":
-        parts.append(
-            "in a bright modern gym interior, clean and minimal environment"
-        )
+        parts.append("bright modern gym interior, clean minimal environment")
     else:
-        parts.append(
-            "in a minimal, softly lit neutral background"
-        )
+        parts.append("minimal neutral background with soft professional lighting")
 
     # Ürün açıklaması
     if product_text:
         parts.append(
             f"the model is wearing: {product_text}. "
-            "The lingerie must be clearly visible, accurate to the description, "
-            "and realistically fitted to the body."
+            "The garment must be clearly visible, accurate to the description and reference, "
+            "and realistically fitted."
         )
 
     # Ek notlar
     if extra_notes:
         parts.append(extra_notes)
 
-    # Genel stil – iç giyim katalog dili
+    # Genel stil
     parts.append(
-        "high-end lingerie catalog photography, realistic skin texture, natural body shape, "
-        "accurate fabric details, no heavy retouch, soft professional lighting, "
-        "shot on a high-resolution camera."
+        "high-end lingerie and sleepwear catalog photography, realistic skin texture, natural body shape, "
+        "accurate fabric details, no heavy retouch, product-focused, commercial look"
     )
 
     return ", ".join(parts)
 
 
-def history_entry(product_text, shot_type, scene_style, extra_notes):
+def history_entry(product_text, shot_type, side_view, scene_style, extra_notes):
     return (
-        f"[SHOT={shot_type}, SCENE={scene_style}] "
+        f"[SHOT={shot_type}, SIDE={side_view}, SCENE={scene_style}] "
         f"PRODUCT: {product_text or '-'} "
         f"EXTRA: {extra_notes or '-'}"
     )
 
 
 def decode_gemini_image(part):
-    """Gemini image part → PIL Image"""
     blob = part.inline_data
     data = blob.data
-
-    # Bazı sürümlerde data zaten bytes, bazılarında base64 string olabiliyor.
     if isinstance(data, bytes):
         image_bytes = data
     else:
         image_bytes = base64.b64decode(data)
-
     return Image.open(BytesIO(image_bytes))
 
 
@@ -198,50 +207,28 @@ with st.sidebar:
         "Model",
         [
             "gemini-2.5-flash-image",
-            "gemini-3-pro-image-preview",  # hesabında bu model yoksa flash kullan
+            # 3.x pro image sende yoksa hata verir. İstersen kaldır.
+            # "gemini-3-pro-image-preview",
         ],
     )
 
-    shot_type = st.selectbox(
-        "Kadraj / shot type",
-        ["Full body", "Upper body", "Lower body"],
-    )
-
-    side_view = st.selectbox(
-        "Side / Yön",
-        ["Ön", "Sol çapraz", "Arka"],
-    )
+    shot_type = st.selectbox("Kadraj / shot type", ["Full body", "Upper body", "Lower body"])
+    side_view = st.selectbox("Side / Yön", ["Ön", "Sol çapraz", "Arka"])
 
     scene_style = st.selectbox(
         "Sahne / ortam",
-        [
-            "E-commerce studio",
-            "Lifestyle (yatak odası)",
-            "Lifestyle (spor salonu)",
-            "Minimal (nötr arka plan)",
-        ],
+        ["E-commerce studio", "Lifestyle (yatak odası)", "Lifestyle (spor salonu)", "Minimal (nötr arka plan)"],
     )
 
-    aspect_ratio = st.selectbox(
-        "Görsel oranı (şimdilik sadece prompt'ta kullanılıyor)",
-        ["1:1","4:5", "3:4", "9:16", "16:9","5:6","10:13"],
-    )
+    aspect_ratio = st.selectbox("Görsel oranı (prompt)", ["1:1", "4:5", "3:4", "9:16", "16:9", "5:6", "10:13"])
+    resolution = st.selectbox("Çözünürlük (prompt)", ["1K", "2K"])
 
-    resolution = st.selectbox(
-        "Çözünürlük ",
-        ["1K", "2K"],
-    )
-
-    use_context = st.checkbox(
-        "Önceki istekleri bağlam olarak kullan",
-        value=True,
-    )
+    use_context = st.checkbox("Önceki istekleri bağlam olarak kullan", value=True)
 
     st.markdown("---")
     if st.button("🧹 Bağlamı sıfırla (history temizle)"):
         st.session_state["history"] = []
         st.success("Bağlam temizlendi.")
-
 
 st.subheader("1️⃣ Ürün Bilgisi")
 product_text = st.text_area(
@@ -250,34 +237,29 @@ product_text = st.text_area(
 )
 
 st.subheader("2️⃣ Referans Görseller")
-
 col1, col2 = st.columns(2)
 
 with col1:
     product_files = st.file_uploader(
-        "Ürün görselleri (1–3 adet)",
+        "Ürün görselleri (1–3 adet) — mümkünse cut-out/ürün odaklı",
         type=["jpg", "jpeg", "png"],
         accept_multiple_files=True,
     )
 
 with col2:
     model_files = st.file_uploader(
-        "Manken / karakter görselleri (opsiyonel, max 5)",
+        "Manken / karakter görselleri (opsiyonel, max 5) — sadece manken referansı",
         type=["jpg", "jpeg", "png"],
         accept_multiple_files=True,
     )
 
 extra_notes = st.text_area(
     "3️⃣ Ek styling / poz notları (opsiyonel)",
-    placeholder="Örn: model kamera karşısında hafif gülümser, yumuşak stüdyo ışığı, fazla retouch yok...",
+    placeholder="Örn: soft studio light, neutral expression, arms relaxed...",
 )
 
 generate_btn = st.button("🚀 Görsel Üret")
 
-
-# =========================
-#  HISTORY GÖRÜNÜMÜ
-# =========================
 with st.expander("🧠 Konuşma bağlamı / önceki istekler", expanded=False):
     st.write(f"Toplam kayıt sayısı: {len(st.session_state['history'])}")
     if not st.session_state["history"]:
@@ -285,7 +267,6 @@ with st.expander("🧠 Konuşma bağlamı / önceki istekler", expanded=False):
     else:
         for i, h in enumerate(st.session_state["history"], start=1):
             st.markdown(f"**{i}.** {h}")
-
 
 # =========================
 #  GEMINI ÇAĞRISI
@@ -295,48 +276,76 @@ if generate_btn:
         st.error("En az bir ürün açıklaması veya ürün görseli yüklemelisin.")
     else:
         try:
-            # 1) Bu isteği history'e ekle
-            entry = history_entry(product_text, shot_type, scene_style, extra_notes)
+            entry = history_entry(product_text, shot_type, side_view, scene_style, extra_notes)
             st.session_state["history"].append(entry)
 
-            # 2) Prompt'u hazırla
-            base_prompt = build_prompt(product_text, shot_type, scene_style, extra_notes)
+            base_prompt = build_prompt(product_text, shot_type, side_view, scene_style, extra_notes)
             base_prompt += f", aspect ratio {aspect_ratio}, target resolution {resolution}."
 
-            # 3) contents dizisini hazırlayalım
+            # Görselleri oku
+            pil_product_images = [Image.open(f) for f in (product_files or [])[:3]]
+            pil_model_images = [Image.open(f) for f in (model_files or [])[:5]]
+
+            # =========================
+            #  CONTENTS: SYSTEM + USER + IMAGES (ROL AYRIMI)
+            # =========================
             contents = []
 
+            # 1) System prompt
+            contents.append(
+                types.Content(
+                    role="system",
+                    parts=[types.Part(text=SYSTEM_PROMPT)]
+                )
+            )
+
+            # 2) Context (opsiyonel)
             if use_context:
-                for h in st.session_state["history"][:-1]:  # son entry şu anki istek
+                for h in st.session_state["history"][:-1]:
                     contents.append(
-                        f"Previous request style and preferences "
-                        f"(use for consistency, do not repeat): {h}"
+                        types.Content(
+                            role="user",
+                            parts=[types.Part(text=f"Previous request preferences (for consistency, do not repeat): {h}")]
+                        )
                     )
 
-            # Şu anki asıl prompt
-            contents.append(base_prompt)
+            # 3) User prompt
+            contents.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part(text=base_prompt)]
+                )
+            )
 
-            # Referans görselleri ekle
-            pil_images = []
+            # 4) Görselleri role-based anlat (metin + görsel)
+            if pil_product_images:
+                contents.append(
+                    types.Content(
+                        role="user",
+                        parts=[types.Part(text="PRODUCT REFERENCE IMAGES (use ONLY the garment details; ignore any human model):")]
+                    )
+                )
+                for img in pil_product_images:
+                    contents.append(types.Content(role="user", parts=[img]))
 
-            if product_files:
-                for f in product_files[:3]:
-                    pil_images.append(Image.open(f))
+            if pil_model_images:
+                contents.append(
+                    types.Content(
+                        role="user",
+                        parts=[types.Part(text="MODEL REFERENCE IMAGES (use ONLY for general body/pose/angle reference; do not copy identity):")]
+                    )
+                )
+                for img in pil_model_images:
+                    contents.append(types.Content(role="user", parts=[img]))
 
-            if model_files:
-                for f in model_files[:5]:
-                    pil_images.append(Image.open(f))
-
-            contents.extend(pil_images)
-
-            # 4) Gemini'yi çağır
+            # 5) Çağır
             with st.spinner("Gemini ile görsel üretiliyor..."):
                 response = client.models.generate_content(
                     model=model_name,
                     contents=contents,
                 )
 
-            # 5) Görselleri çek (yeni SDK: candidates[*].content.parts)
+            # 6) Görselleri çek
             all_parts = []
             candidates = getattr(response, "candidates", None)
             if candidates:
@@ -353,7 +362,7 @@ if generate_btn:
             ]
 
             if not image_parts:
-                st.error("Gemini görsel döndürmedi. Güvenlik filtresi veya başka bir hata olabilir.")
+                st.error("Gemini görsel döndürmedi. Güvenlik filtresi veya model uyumsuzluğu olabilir.")
             else:
                 st.success("Görseller üretildi ✅")
 
