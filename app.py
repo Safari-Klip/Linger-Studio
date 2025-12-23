@@ -249,7 +249,7 @@ with col1:
 
 with col2:
     model_files = st.file_uploader(
-        "Manken / karakter görselleri (opsiyonel, max 5) — sadece manken referansı",
+        "Manken / karakter görselleri (opsiyonel, max 5) — sadece manken",
         type=["jpg", "jpeg", "png"],
         accept_multiple_files=True,
     )
