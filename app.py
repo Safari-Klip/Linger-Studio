@@ -14,17 +14,17 @@ GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", None)
 
 # Lokal geliştirme için istersen aç:
 # if not GEMINI_API_KEY:
-#     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+#     _API_KEY = os.getenv("_API_KEY", "")
 
-if not GEMINI_API_KEY:
+if not _API_KEY:
     raise RuntimeError(
-        "GEMINI_API_KEY tanımlı değil. "
+        "_API_KEY tanımlı değil. "
         "Lokal için ortam değişkenine, Cloud için Secrets'e eklemelisin."
     )
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=_API_KEY)
 
-st.set_page_config(page_title="Gemini Lingerie Studio", layout="wide")
+st.set_page_config(page_title=" Lingerie Studio", layout="wide")
 
 # =========================
 #  BASİT LOGIN / ŞİFRE KORUMASI
@@ -177,7 +177,7 @@ def history_entry(product_text, shot_type, side_view, scene_style, extra_notes):
     )
 
 
-def decode_gemini_image(part):
+def decode__image(part):
     blob = part.inline_data
     data = blob.data
     if isinstance(data, bytes):
@@ -188,7 +188,7 @@ def decode_gemini_image(part):
 
 
 def part_to_streamlit_image(part):
-    img = decode_gemini_image(part)
+    img = decode__image(part)
     buf = BytesIO()
     img.save(buf, "PNG")
     buf.seek(0)
@@ -198,7 +198,7 @@ def part_to_streamlit_image(part):
 # =========================
 #  ANA UI
 # =========================
-st.title("👗 G Lingerie Studio (Gemini + Memory)")
+st.title("👗 G Lingerie Studio ( + Memory)")
 
 with st.sidebar:
     st.header("⚙️ Ayarlar")
@@ -206,7 +206,8 @@ with st.sidebar:
     model_name = st.selectbox(
         "Model",
         [
-            "gemini-2.5-flash-image",
+            "-2.5-flash-image",
+            "gemini-3-pro-image-preview", 
             # 3.x pro image sende yoksa hata verir. İstersen kaldır.
             # "gemini-3-pro-image-preview",
         ],
