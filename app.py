@@ -91,7 +91,7 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - Model appearance comes ONLY from model reference images (if provided) and prompt instructions.
 
 4. MODEL GENERATION RULE
-- Always generate a DIFFERENT male model wearing the same garment.
+- Always generate a DIFFERENT female model wearing the same garment.
 - Never reuse the same model identity across generations unless explicitly instructed.
 
 5. OUTPUT STYLE
@@ -119,21 +119,21 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
     # Kadraj
     if shot_type == "Full body":
         parts.append(
-            "full body fashion shot of a male model, standing naturally, "
+            "full body fashion shot of a female model, standing naturally, "
             "entire outfit visible from head to toe, balanced proportions, "
             "catalog-style composition"
         )
 
     elif shot_type == "Upper body":
         parts.append(
-            "upper body fashion shot of a male model, framed from shoulders to waist, "
+            "upper body fashion shot of a female model, framed from shoulders to waist, "
             "clear focus on the top garment, natural posture, clean and professional "
             "e-commerce composition"
         )
 
     elif shot_type == "Lower body":
         parts.append(
-            "lower body fashion shot of a male model, framed from waist to mid-thigh or knees, "
+            "lower body fashion shot of a female model, framed from waist to mid-thigh or knees, "
             "clear focus on the bottom garment, accurate fit and fabric details, "
             "clean catalog-style composition"
         )
@@ -141,14 +141,14 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
     #Side/Yön
     if side_view == "Ön":
         parts.append(
-            "front-facing view of the male model, facing the camera directly, "
+            "front-facing view of the female model, facing the camera directly, "
             "clear and unobstructed view of the garment, symmetrical presentation, "
             "ideal for e-commerce product display, neutral and natural posture"
     )
 
     elif side_view == "Sol çapraz":
         parts.append(
-            "three-quarter angle view from the left side, male model slightly turned, "
+            "three-quarter angle view from the left side, female model slightly turned, "
             "showing both front and side of the garment, natural relaxed posture, "
             "enhances depth and fabric drape, suitable for lingerie and sleepwear catalog"
     )
@@ -156,7 +156,7 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
 
     elif side_view == "Arka":
         parts.append(
-            "back view of the male model, facing away from the camera, "
+            "back view of the female model, facing away from the camera, "
             "clear visibility of the back design of the garment, straps, seams, and fit, "
             "neutral posture, professional catalog presentation"
     )
