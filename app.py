@@ -99,6 +99,7 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - Neutral, non-sexualized pose
 - Product-focused composition
 - Accurate garment representation
+- The mannequins should stand vertically in the image
 """
 
 def pil_to_part(img: Image.Image) -> types.Part:
