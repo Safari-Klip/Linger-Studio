@@ -121,22 +121,22 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
     if shot_type == "Full body":
         parts.append(
             "full body fashion shot of a male model, standing naturally, "
-            "entire outfit visible from head to toe, balanced proportions, "
+            "entire outfit visible from head to toe, head and feet fully in frame, balanced proportions, "
             "catalog-style composition"
         )
 
     elif shot_type == "Upper body":
         parts.append(
-            "upper body fashion shot of a male model, framed from shoulders to waist, "
+            "upper body fashion shot of a male model, framed from the top of the head to the waist, full head completely in frame"
             "clear focus on the top garment, natural posture, clean and professional "
             "e-commerce composition"
         )
 
     elif shot_type == "Lower body":
         parts.append(
-            "lower body fashion shot of a male model, framed from waist to mid-thigh or knees, "
-            "clear focus on the bottom garment, accurate fit and fabric details, "
-            "clean catalog-style composition"
+            "lower body fashion shot of a male model, framed from the waist down to the feet, "
+            "upper body not visible, full legs and feet completely in frame, clear focus on the bottom garment, "
+            "accurate fit and fabric details, clean catalog-style composition"
         )
 
     #Side/Yön
