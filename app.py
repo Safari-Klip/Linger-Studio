@@ -256,7 +256,7 @@ with st.sidebar:
     )
     
     # İngilizce karşılığını belirle
-    gender_en = "female" if gender_tr == "Kadın" else "male"
+    gender_en = "male" if gender_tr == "Erkek" else "female"
 
     shot_type = st.selectbox(
         "Kadraj / shot type",
