@@ -67,7 +67,8 @@ if "history" not in st.session_state:
 #  PROMPT BUILDER
 # =========================
 
-SYSTEM_PROMPT = """
+def get_system_prompt(gender_en):
+    return f"""
 You are a professional fashion image generation system specialized in e-commerce product visualization.
 
 CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
@@ -90,7 +91,7 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - Model appearance comes ONLY from model reference images (if provided) and prompt instructions.
 
 4. MODEL GENERATION RULE
-- Always generate a DIFFERENT female model wearing the same garment.
+- Always generate a DIFFERENT {gender_en} model wearing the same garment.
 - Never reuse the same model identity across generations unless explicitly instructed.
 
 5. OUTPUT STYLE
@@ -113,53 +114,52 @@ def pil_to_part(img: Image.Image) -> types.Part:
         )
     )
 
-def build_prompt(product_text, shot_type, scene_style, extra_notes):
+def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, gender_en):
     parts = []
 
     # Kadraj
     if shot_type == "Full body":
         parts.append(
-            "full body fashion shot of a female model, standing naturally, "
+            f"full body fashion shot of a {gender_en} model, standing naturally, "
             "entire outfit visible from head to toe, head and feet fully in frame, balanced proportions, "
             "catalog-style composition"
         )
 
     elif shot_type == "Upper body":
         parts.append(
-            "upper body fashion shot of a female model, framed from the top of the head to the waist, full head completely in frame"
+            f"upper body fashion shot of a {gender_en} model, framed from the top of the head to the waist, full head completely in frame, "
             "clear focus on the top garment, natural posture, clean and professional "
             "e-commerce composition"
         )
 
     elif shot_type == "Lower body":
         parts.append(
-            "lower body fashion shot of a female model, framed from the waist down to the feet, "
+            f"lower body fashion shot of a {gender_en} model, framed from the waist down to the feet, "
             "upper body not visible, full legs and feet completely in frame, clear focus on the bottom garment, "
             "accurate fit and fabric details, clean catalog-style composition"
         )
 
-    #Side/Yön
+    # Side/Yön
     if side_view == "Ön":
         parts.append(
-            "front-facing view of the female model, facing the camera directly, "
+            f"front-facing view of the {gender_en} model, facing the camera directly, "
             "clear and unobstructed view of the garment, symmetrical presentation, "
             "ideal for e-commerce product display, neutral and natural posture"
-    )
+        )
 
     elif side_view == "Sol çapraz":
         parts.append(
-            "three-quarter angle view from the left side, female model slightly turned, "
+            f"three-quarter angle view from the left side, {gender_en} model slightly turned, "
             "showing both front and side of the garment, natural relaxed posture, "
             "enhances depth and fabric drape, suitable for lingerie and sleepwear catalog"
-    )
-
+        )
 
     elif side_view == "Arka":
         parts.append(
-            "back view of the female model, facing away from the camera, "
+            f"back view of the {gender_en} model, facing away from the camera, "
             "clear visibility of the back design of the garment, straps, seams, and fit, "
             "neutral posture, professional catalog presentation"
-    )
+        )
 
     # Ortam
     if scene_style == "E-commerce studio":
@@ -202,9 +202,9 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
     return ", ".join(parts)
 
 
-def history_entry(product_text,shot_type,side_view, scene_style, extra_notes):
+def history_entry(product_text, shot_type, side_view, scene_style, extra_notes, gender_tr):
     return (
-        f"[SHOT={shot_type}, SCENE={scene_style}] "
+        f"[SHOT={shot_type}, SCENE={scene_style}, CINSIYET={gender_tr}] "
         f"PRODUCT: {product_text or '-'} "
         f"EXTRA: {extra_notes or '-'}"
     )
@@ -248,6 +248,15 @@ with st.sidebar:
         ],
     )
 
+    # CİNSİYET SEÇİMİ EKLENDİ
+    gender_tr = st.selectbox(
+        "Cinsiyet",
+        ["Kadın", "Erkek"],
+        index=0  # Varsayılan olarak Kadın seçili
+    )
+    
+    # İngilizce karşılığını belirle
+    gender_en = "female" if gender_tr == "Kadın" else "male"
 
     shot_type = st.selectbox(
         "Kadraj / shot type",
@@ -343,98 +352,80 @@ if generate_btn:
     else:
         try:
             # 1) Bu isteği history'e ekle
-            entry = history_entry(product_text, shot_type,side_view,scene_style, extra_notes)
+            entry = history_entry(product_text, shot_type, side_view, scene_style, extra_notes, gender_tr)
             st.session_state["history"].append(entry)
 
-            # 2) Prompt'u hazırla
-            base_prompt = build_prompt(product_text, shot_type, scene_style, extra_notes)
+            # 2) Prompt'u hazırla - gender_en parametresini ekledik
+            base_prompt = build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, gender_en)
             base_prompt += f", aspect ratio {aspect_ratio}, target resolution {resolution}."
 
             # --- Görselleri oku (PIL) ---
             pil_product_images = [Image.open(f) for f in (product_files or [])[:3]]
             pil_model_images   = [Image.open(f) for f in (model_files or [])[:5]]
+            
             # 3) contents dizisini hazırlayalım
             contents = []
+            
+            # System prompt'u dinamik olarak oluştur
+            SYSTEM_PROMPT = get_system_prompt(gender_en)
             
             contents.append(
                 types.Content(
                     role="user",
                     parts=[types.Part(text="SYSTEM INSTRUCTIONS (follow strictly):\n" + SYSTEM_PROMPT)]
-                    )
                 )
+            )
             
-            # 2) Geçmiş bağlam (opsiyonel)
+            # 4) Geçmiş bağlam (opsiyonel)
             if use_context:
                 for h in st.session_state["history"][:-1]:
                     contents.append(
                         types.Content(
                             role="user",
                             parts=[types.Part(text=f"Previous request preferences (for consistency, do not repeat): {h}")]
-                            )
                         )
-                    
-                    
-            # 3) Asıl kullanıcı promptu
-            contents.append(
-                types.Content(
-                    role="user",
-                    parts=[types.Part(text=base_prompt)]
                     )
-                )
             
-            
-            # 4) Ürün görselleri (sadece ürün detayları için)
+            # 5) Ürün görselleri (sadece ürün detayları için)
             if pil_product_images:
+                # Önce açıklama metni
                 contents.append(
                     types.Content(
                         role="user",
                         parts=[types.Part(text="PRODUCT REFERENCE IMAGES (use ONLY garment details; ignore any human model in these images):")]
-                        )
                     )
+                )
+                # Sonra her görsel için ayrı content
                 for img in pil_product_images:
                     contents.append(types.Content(role="user", parts=[pil_to_part(img)]))
-                    
-                    
-            # 5) Manken görselleri (sadece manken referansı için)
+            
+            # 6) Manken görselleri (sadece manken referansı için)
             if pil_model_images:
                 contents.append(
                     types.Content(
                         role="user",
                         parts=[types.Part(text="MODEL REFERENCE IMAGES (use ONLY as body/pose/angle reference; do not copy identity):")]
-                        )
                     )
+                )
                 for img in pil_model_images:
                     contents.append(types.Content(role="user", parts=[pil_to_part(img)]))
-        
+            
+            # 7) Asıl kullanıcı promptu - EN SONA EKLENMELİ
+            contents.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part(text=base_prompt)]
+                )
+            )
 
-            # 4) Gemini'yi çağır
+            # 8) Gemini'yi çağır
             with st.spinner("Gemini ile görsel üretiliyor..."):
                 response = client.models.generate_content(
                     model=model_name,
                     contents=contents,
                 )
-                
-                
-            if pil_product_images:
-                contents.append(
-                    types.Content(
-                        role="user",
-                        parts=[types.Part(text="PRODUCT REFERENCE IMAGES (use ONLY garment details; ignore any human model in these images):")]
-                            + [pil_to_part(img) for img in pil_product_images]
-                            )
-                    )
-
-            if pil_model_images:
-                contents.append(
-                    types.Content(
-                        role="user",
-                        parts=[types.Part(text="MODEL REFERENCE IMAGES (use ONLY as body/pose/angle reference; do not copy identity):")]
-                        + [pil_to_part(img) for img in pil_model_images]
-                        )
-                    )
-
-
-            # 5) Görselleri çek (yeni SDK: candidates[*].content.parts)
+            
+            # 9) Görselleri çek (yeni SDK: candidates[*].content.parts)
             all_parts = []
             candidates = getattr(response, "candidates", None)
             if candidates:
