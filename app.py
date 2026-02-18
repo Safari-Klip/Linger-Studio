@@ -251,7 +251,7 @@ with st.sidebar:
     # CİNSİYET SEÇİMİ EKLENDİ
     gender_tr = st.selectbox(
         "Cinsiyet",
-        ["Kadın", "Erkek"],
+        ["Bayan Değil Kadın", "Erkek"],
         index=0  # Varsayılan olarak Kadın seçili
     )
     
