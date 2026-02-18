@@ -121,7 +121,7 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
     if shot_type == "Full body":
         parts.append(
             f"full body fashion shot of a {gender_en} model, standing naturally, "
-            "entire outfit visible from head to toe, head and feet fully in frame, balanced proportions, "
+            "entire outfit visible from head to toe, eyes,head and feet fully in frame, balanced proportions, "
             "catalog-style composition"
         )
 
