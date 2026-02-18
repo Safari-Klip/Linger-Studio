@@ -63,12 +63,13 @@ if not st.session_state["auth_ok"]:
 if "history" not in st.session_state:
     st.session_state["history"] = []  # her eleman bir string: "Ürün: ..., Ayarlar: ..."
 
+gender_en = "male" if gender == "Erkek" else "female"
 
 # =========================
 #  PROMPT BUILDER
 # =========================
 
-SYSTEM_PROMPT = """
+SYSTEM_PROMPT = f"""
 You are a professional fashion image generation system specialized in e-commerce product visualization.
 
 CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
@@ -91,7 +92,7 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - Model appearance comes ONLY from model reference images (if provided) and prompt instructions.
 
 4. MODEL GENERATION RULE
-- Always generate a DIFFERENT male model wearing the same garment.
+- Always generate a DIFFERENT {gender_en} model wearing the same garment.
 - Never reuse the same model identity across generations unless explicitly instructed.
 
 5. OUTPUT STYLE
@@ -120,21 +121,21 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
     # Kadraj
     if shot_type == "Full body":
         parts.append(
-            "full body fashion shot of a male model, standing naturally, "
+            f"full body fashion shot of a {gender_en} model, standing naturally, "
             "entire outfit visible from head to toe, head and feet fully in frame, balanced proportions, "
             "catalog-style composition"
         )
 
     elif shot_type == "Upper body":
         parts.append(
-            "upper body fashion shot of a male model, framed from the top of the head to the waist, full head completely in frame"
+            f"upper body fashion shot of a {gender_en} model, framed from the top of the head to the waist, full head completely in frame"
             "clear focus on the top garment, natural posture, clean and professional "
             "e-commerce composition"
         )
 
     elif shot_type == "Lower body":
         parts.append(
-            "lower body fashion shot of a male model, framed from the waist down to the feet, "
+            f"lower body fashion shot of a {gender_en} model, framed from the waist down to the feet, "
             "upper body not visible, full legs and feet completely in frame, clear focus on the bottom garment, "
             "accurate fit and fabric details, clean catalog-style composition"
         )
@@ -142,14 +143,14 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
     #Side/Yön
     if side_view == "Ön":
         parts.append(
-            "front-facing view of the male model, facing the camera directly, "
+            f"front-facing view of the {gender_en} model, facing the camera directly, "
             "clear and unobstructed view of the garment, symmetrical presentation, "
             "ideal for e-commerce product display, neutral and natural posture"
     )
 
     elif side_view == "Sol çapraz":
         parts.append(
-            "three-quarter angle view from the left side, male model slightly turned, "
+            f"three-quarter angle view from the left side, {gender_en} model slightly turned, "
             "showing both front and side of the garment, natural relaxed posture, "
             "enhances depth and fabric drape, suitable for lingerie and sleepwear catalog"
     )
@@ -157,7 +158,7 @@ def build_prompt(product_text, shot_type, scene_style, extra_notes):
 
     elif side_view == "Arka":
         parts.append(
-            "back view of the male model, facing away from the camera, "
+            f"back view of the {gender_en} model, facing away from the camera, "
             "clear visibility of the back design of the garment, straps, seams, and fit, "
             "neutral posture, professional catalog presentation"
     )
@@ -247,6 +248,11 @@ with st.sidebar:
             "gemini-2.5-flash-image",
             "gemini-3-pro-image-preview",  # hesabında bu model yoksa flash kullan
         ],
+    )
+
+    gender = st.selectbox(
+        "Cinsiyet",
+        ["Erkek", "Kadın"],
     )
 
     shot_type = st.selectbox(
