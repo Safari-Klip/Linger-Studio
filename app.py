@@ -245,6 +245,7 @@ with st.sidebar:
         [
             "gemini-2.5-flash-image",
             "gemini-3-pro-image-preview",  # hesabında bu model yoksa flash kullan
+            "gemini-3.1-flash-image-preview",
         ],
     )
 
