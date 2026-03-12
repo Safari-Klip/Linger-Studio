@@ -282,6 +282,7 @@ with st.sidebar:
         "Sahne / ortam",
         [
             "E-commerce studio",
+            "Lifestyle (plaj)",
             "Lifestyle (yatak odası)",
             "Lifestyle (spor salonu)",
             "Minimal (nötr arka plan)",
