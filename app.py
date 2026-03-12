@@ -169,19 +169,21 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
         )
         
     elif scene_style == "Lifestyle (plaj)":
-    parts.append(
-        "on a sunny sandy beach with turquoise sea in background, soft golden hour light, "
-        "relaxed vacation atmosphere"
-    )
+        parts.append(
+            "on a sunny sandy beach with turquoise sea in background, soft golden hour light, "
+            "relaxed vacation atmosphere"
+        )
     
     elif scene_style == "Lifestyle (yatak odası)":
         parts.append(
             "in a cozy modern bedroom, soft natural window light, neutral colors"
         )
+    
     elif scene_style == "Lifestyle (spor salonu)":
         parts.append(
             "in a bright modern gym interior, clean and minimal environment"
         )
+    
     else:
         parts.append(
             "in a minimal, softly lit neutral background"
