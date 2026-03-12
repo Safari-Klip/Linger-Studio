@@ -167,6 +167,7 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
             "in a professional e-commerce studio, clean white seamless background, "
             "even softbox lighting, no props"
         )
+        
     elif scene_style == "Lifestyle (plaj)":
     parts.append(
         "on a sunny sandy beach with turquoise sea in background, soft golden hour light, "
