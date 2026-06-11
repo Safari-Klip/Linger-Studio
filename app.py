@@ -73,35 +73,52 @@ You are a professional fashion image generation system specialized in e-commerce
 
 CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 
-1. REFERENCE IMAGE HANDLING
+1. PRODUCT SOURCE PRIORITY RULE
+- Product reference images are the primary source for garment shape, fit, silhouette, seams, buttons, pockets, collar, sleeves, waistband, print placement, fabric texture and construction details.
+- Written product instructions are the primary source for exact color, Pantone code, HEX code, fabric name, unclear details and corrections.
+- If the written prompt includes a color name, Pantone code, HEX code, fabric type or correction, it OVERRIDES the visual color or unclear detail in the reference image.
+- If no written correction is provided, reproduce the garment exactly as shown in the product image.
+- Do not ignore written instructions.
+- Do not invent missing product details.
+
+2. PRODUCT ACCURACY RULE
+- The garment shown in the product reference image is the source of truth.
+- Do not redesign the garment.
+- Do not modify print pattern, artwork, embroidery, lace placement, stitching, buttons, pockets, collar shape, sleeve length, waistband, hem, piping, cuffs, fabric texture or garment proportions.
+- Product accuracy is more important than model beauty.
+
+3. PAJAMA / SLEEPWEAR RULE
+- For pajamas and sleepwear, preserve the exact set structure: top, bottom, collar, sleeve length, button count, pocket position, piping, cuffs and waistband.
+- The print pattern must remain identical to the reference image.
+- Do not reinterpret, simplify, recreate, redraw or invent new pattern elements.
+
+4. REFERENCE IMAGE HANDLING
 - Product reference images may include a human model.
-- From product reference images, you must extract and use ONLY the garment itself:
-  garment design, color, fabric, texture, and construction details.
+- From product reference images, use ONLY the garment itself.
 - Any human model present in product reference images MUST be completely ignored.
 - Do NOT reuse or imitate the face, body, pose, hairstyle, skin tone, or identity of the model shown.
 
-2. MODEL REFERENCE HANDLING
-- If separate model reference images are provided, use them ONLY as a general reference
-  for body proportions, pose direction, and viewing angle.
+5. MODEL REFERENCE HANDLING
+- If separate model reference images are provided, use them ONLY as a general reference for body proportions, pose direction and viewing angle.
 - Do NOT copy or replicate the exact identity.
 
-3. STRICT SEPARATION RULE
+6. STRICT SEPARATION RULE
 - The garment and the model are two fully independent entities.
-- Garment information comes ONLY from product reference images and text.
-- Model appearance comes ONLY from model reference images (if provided) and prompt instructions.
+- Garment information comes ONLY from product reference images and written product text.
+- Model appearance comes ONLY from model reference images, if provided, and prompt instructions.
 
-4. MODEL GENERATION RULE
+7. MODEL GENERATION RULE
 - Always generate a DIFFERENT {gender_en} model wearing the same garment.
 - Never reuse the same model identity across generations unless explicitly instructed.
 
-5. OUTPUT STYLE
-- Professional e-commerce fashion catalog photography
-- Neutral, non-sexualized pose
-- Product-focused composition
-- Accurate garment representation
-- The mannequins should stand vertically in the image
+8. OUTPUT STYLE
+- Professional e-commerce fashion catalog photography.
+- Neutral, non-sexualized pose.
+- Product-focused composition.
+- Accurate garment representation.
+- The model should stand vertically in the image.
 """
-
+    
 def pil_to_part(img: Image.Image) -> types.Part:
     """PIL Image -> Gemini inline image part"""
     buf = BytesIO()
@@ -192,10 +209,11 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
     # Ürün açıklaması
     if product_text:
         parts.append(
-            f"the model is wearing: {product_text}. "
-            "The lingerie must be clearly visible, accurate to the description, "
-            "and realistically fitted to the body."
-        )
+        f"WRITTEN PRODUCT INSTRUCTIONS: {product_text}. "
+        "These written instructions must be followed strictly. "
+        "If the written instructions include a Pantone code, HEX code, exact color name, fabric type, button count, pocket detail, collar type, pattern description or correction, those details override unclear or conflicting details in the image. "
+        "The garment must be clearly visible, accurate to the written description and realistically fitted to the body."
+    )
 
     # Ek notlar
     if extra_notes:
@@ -313,7 +331,7 @@ with st.sidebar:
 st.subheader("1️⃣ Ürün Bilgisi")
 product_text = st.text_area(
     "Ürünü kısaca tanımla (marka, model, renk, özellikler)",
-    placeholder="Örn: Chantelle SoftStretch Power derin V yaka sütyen, bej, dikişsiz, tam toparlayıcı...",
+    placeholder="Örn: Erkek pijama takımı. Renk: Pantone 19-4024 Navy / HEX #1F2A44. Kumaş: pamuk modal. Yaka: gömlek yaka. Düğme: 5 adet. Cep: sol göğüste tek cep. Desen: ince dikey çizgili. Fotoğraftaki kesim ve ürün detayları korunmalı.",
 )
 
 st.subheader("2️⃣ Referans Görseller")
