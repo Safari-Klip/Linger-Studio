@@ -314,7 +314,7 @@ with st.sidebar:
 
     resolution = st.selectbox(
         "Çözünürlük ",
-        ["1K", "2K"],
+        ["1K", "2K","4k"],
     )
 
     use_context = st.checkbox(
