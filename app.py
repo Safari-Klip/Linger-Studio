@@ -447,51 +447,26 @@ if generate_btn:
                 )
             )
             # 8) Gemini'yi çağır
-            # Minimum 3 GERÇEK görsel üret.
-            # Bir çağrıda birden fazla görsel gelirse hepsini koru.
+            # Minimum 3 görsel üret, fazlası gelirse hepsini göster
 
             MIN_IMAGES = 3
-            MAX_ATTEMPTS = 6
+            MAX_ATTEMPTS = 5
 
             image_parts = []
             attempt = 0
 
-            with st.spinner("Gemini ile en az 3 görsel üretiliyor..."):
+            with st.spinner("Gemini ile görseller üretiliyor..."):
 
                 while len(image_parts) < MIN_IMAGES and attempt < MAX_ATTEMPTS:
                     attempt += 1
 
-                    # Her çağrıyı birbirinden biraz ayır
-                    attempt_contents = list(contents)
-
-                    attempt_contents.append(
-                        types.Content(
-                            role="user",
-                            parts=[
-                                types.Part(
-                                    text=(
-                                        f"Generate final image variation #{attempt}. "
-                                        "Return a complete final fashion image. "
-                                        "Keep the garment exactly accurate to the references. "
-                                        "This should be a distinct generation from previous attempts."
-                                    )
-                                )
-                            ]
-                        )
-                    )
-
                     response = client.models.generate_content(
                         model=model_name,
-                        contents=attempt_contents,
-                        config=types.GenerateContentConfig(
-                            response_modalities=["IMAGE"]
-                        ),
+                        contents=contents,
                     )
 
-                    # Bu API çağrısındaki TÜM görselleri al
+                    # Bu çağrıdaki tüm görselleri al
                     candidates = getattr(response, "candidates", None)
-
-                    images_this_attempt = 0
 
                     if candidates:
                         for cand in candidates:
@@ -509,14 +484,8 @@ if generate_btn:
                                         ).startswith("image/")
                                     ):
                                         image_parts.append(part)
-                                        images_this_attempt += 1
 
-                    # Kontrol amaçlı Streamlit ekranına bilgi
-                    st.write(
-                        f"Deneme {attempt}: "
-                        f"{images_this_attempt} görsel geldi — "
-                        f"toplam {len(image_parts)}"
-                    )
+           
             if not image_parts:
                 st.error("Gemini görsel döndürmedi. Güvenlik filtresi veya başka bir hata olabilir.")
             else:
