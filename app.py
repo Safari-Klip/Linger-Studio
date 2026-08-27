@@ -446,67 +446,44 @@ if generate_btn:
                     parts=[types.Part(text=base_prompt)]
                 )
             )
-"""
+
             # 8) Gemini'yi çağır
-            with st.spinner("Gemini ile görsel üretiliyor..."):
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=contents,
-                )
-            
-            # 9) Görselleri çek (yeni SDK: candidates[*].content.parts)
-            all_parts = []
-            candidates = getattr(response, "candidates", None)
-            if candidates:
-                for cand in candidates:
-                    content = getattr(cand, "content", None)
-                    parts = getattr(content, "parts", None)
-                    if parts:
-                        all_parts.extend(parts)
+            # Minimum 3 görsel üret, fazlası gelirse hepsini göster
 
-            image_parts = [
-                p for p in all_parts
-                if getattr(p, "inline_data", None) is not None
-                and getattr(p.inline_data, "mime_type", "").startswith("image/")
-            ]
-"""
-            # 8) Gemini'yi çağır
-# Minimum 3 görsel üret, fazlası gelirse hepsini göster
+            MIN_IMAGES = 3
+            MAX_ATTEMPTS = 5
 
-MIN_IMAGES = 3
-MAX_ATTEMPTS = 5
+            image_parts = []
+            attempt = 0
 
-image_parts = []
-attempt = 0
+            with st.spinner("Gemini ile görseller üretiliyor..."):
 
-with st.spinner("Gemini ile görseller üretiliyor..."):
+                while len(image_parts) < MIN_IMAGES and attempt < MAX_ATTEMPTS:
+                    attempt += 1
 
-    while len(image_parts) < MIN_IMAGES and attempt < MAX_ATTEMPTS:
-        attempt += 1
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=contents,
+                    )
 
-        response = client.models.generate_content(
-            model=model_name,
-            contents=contents,
-        )
+                    candidates = getattr(response, "candidates", None)
 
-        candidates = getattr(response, "candidates", None)
+                    if candidates:
+                        for cand in candidates:
+                            content = getattr(cand, "content", None)
+                            parts = getattr(content, "parts", None)
 
-        if candidates:
-            for cand in candidates:
-                content = getattr(cand, "content", None)
-                parts = getattr(content, "parts", None)
-
-                if parts:
-                    for part in parts:
-                        if (
-                            getattr(part, "inline_data", None) is not None
-                            and getattr(
-                                part.inline_data,
-                                "mime_type",
-                                ""
-                            ).startswith("image/")
-                        ):
-                            image_parts.append(part)
+                            if parts:
+                                for part in parts:
+                                    if (
+                                        getattr(part, "inline_data", None) is not None
+                                        and getattr(
+                                            part.inline_data,
+                                            "mime_type",
+                                            ""
+                                        ).startswith("image/")
+                                    ):
+                                        image_parts.append(part)
             if not image_parts:
                 st.error("Gemini görsel döndürmedi. Güvenlik filtresi veya başka bir hata olabilir.")
             else:
