@@ -456,14 +456,14 @@ if generate_btn:
             attempt = 0
 
             with st.spinner("Gemini ile görseller üretiliyor..."):
-
+                chat = client.chats.create(
+                    model=model_name,
+                )
+                    
                 while len(image_parts) < MIN_IMAGES and attempt < MAX_ATTEMPTS:
                     attempt += 1
 
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=contents,
-                    )
+                    response = chat.send_message(contents)
 
                     # Bu çağrıdaki tüm görselleri al
                     candidates = getattr(response, "candidates", None)
