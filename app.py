@@ -398,54 +398,30 @@ if generate_btn:
             # System prompt'u dinamik olarak oluştur
             SYSTEM_PROMPT = get_system_prompt(gender_en)
             
-            contents.append(
-                types.Content(
-                    role="user",
-                    parts=[types.Part(text="SYSTEM INSTRUCTIONS (follow strictly):\n" + SYSTEM_PROMPT)]
-                )
-            )
+            contents.append(types.Part(text="SYSTEM INSTRUCTIONS (follow strictly):\n" + SYSTEM_PROMPT))
             
             # 4) Geçmiş bağlam (opsiyonel)
             if use_context:
                 for h in st.session_state["history"][:-1]:
-                    contents.append(
-                        types.Content(
-                            role="user",
-                            parts=[types.Part(text=f"Previous request preferences (for consistency, do not repeat): {h}")]
-                        )
-                    )
+                    contents.append(types.Part(text=f"Previous request preferences (for consistency, do not repeat): {h}"))
             
             # 5) Ürün görselleri (sadece ürün detayları için)
             if pil_product_images:
                 # Önce açıklama metni
-                contents.append(
-                    types.Content(
-                        role="user",
-                        parts=[types.Part(text="PRODUCT REFERENCE IMAGES (use ONLY garment details; ignore any human model in these images):")]
-                    )
-                )
+                contents.append(types.Part(text="PRODUCT REFERENCE IMAGES (use ONLY garment details; ignore any human model in these images):"))
                 # Sonra her görsel için ayrı content
                 for img in pil_product_images:
-                    contents.append(types.Content(role="user", parts=[pil_to_part(img)]))
+                    contents.append(pil_to_part(img))
             
             # 6) Manken görselleri (sadece manken referansı için)
             if pil_model_images:
-                contents.append(
-                    types.Content(
-                        role="user",
-                        parts=[types.Part(text="MODEL REFERENCE IMAGES (use ONLY as body/pose/angle reference; do not copy identity):")]
-                    )
-                )
+                contents.append(types.Part(text="MODEL REFERENCE IMAGES (use ONLY as body/pose/angle reference; do not copy identity):"))
                 for img in pil_model_images:
-                    contents.append(types.Content(role="user", parts=[pil_to_part(img)]))
+                    contents.append(pil_to_part(img))
             
             # 7) Asıl kullanıcı promptu - EN SONA EKLENMELİ
-            contents.append(
-                types.Content(
-                    role="user",
-                    parts=[types.Part(text=base_prompt)]
-                )
-            )
+            contents.append(types.Part(text=base_prompt))
+            
             # 8) Gemini'yi çağır
             # Minimum 3 görsel üret, fazlası gelirse hepsini göster
 
