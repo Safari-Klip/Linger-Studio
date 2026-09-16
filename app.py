@@ -99,7 +99,11 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - Do NOT reuse or imitate the face, body, pose, hairstyle, skin tone, or identity of the model shown.
 
 5. MODEL REFERENCE HANDLING
-- If separate model reference images are provided, use them ONLY as a general reference for body proportions, pose direction and viewing angle.
+- If separate model reference images are provided, use them ONLY as a general reference for body proportions.
+- NEVER use the pose direction, camera angle or viewing angle from model reference images.
+- The camera/view direction selected in the CURRENT USER REQUEST is the absolute source of truth.
+- The selected camera/view direction overrides the angle shown in all product and model reference images.
+- Use a natural, neutral e-commerce catalog pose with relaxed arms and realistic body posture.
 - Do NOT copy or replicate the exact identity.
 
 6. STRICT SEPARATION RULE
@@ -387,7 +391,35 @@ if generate_btn:
             # 2) Prompt'u hazırla - gender_en parametresini ekledik
             base_prompt = build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, gender_en)
             base_prompt += f", aspect ratio {aspect_ratio}, target resolution {resolution}."
-
+            if side_view == "Ön":
+                base_prompt += """
+            ABSOLUTE CAMERA VIEW REQUIREMENT:
+            FRONT VIEW ONLY.
+            The model must face directly toward the camera.
+            Both shoulders and both hips must face forward symmetrically.
+            Do not use a three-quarter view, side view or rotated body pose.
+            Ignore the camera angle and pose shown in ALL reference images.
+            """
+            
+            elif side_view == "Sol çapraz":
+                base_prompt += """
+            ABSOLUTE CAMERA VIEW REQUIREMENT:
+            LEFT THREE-QUARTER VIEW ONLY.
+            The model must be turned approximately 30-45 degrees to show the front and left side.
+            Do not use a straight front, right three-quarter, profile or back view.
+            Ignore the camera angle and pose shown in ALL reference images.
+            """
+            
+            elif side_view == "Arka":
+                base_prompt += """
+            ABSOLUTE CAMERA VIEW REQUIREMENT:
+            BACK VIEW ONLY.
+            The model must face directly away from the camera.
+            The back of the garment must be clearly visible.
+            Do not use a front, three-quarter front or side view.
+            Ignore the camera angle and pose shown in ALL reference images.
+            """
+                
             # --- Görselleri oku (PIL) ---
             pil_product_images = [Image.open(f) for f in (product_files or [])[:3]]
             pil_model_images   = [Image.open(f) for f in (model_files or [])[:5]]
@@ -415,7 +447,7 @@ if generate_btn:
             
             # 6) Manken görselleri (sadece manken referansı için)
             if pil_model_images:
-                contents.append(types.Part(text="MODEL REFERENCE IMAGES (use ONLY as body/pose/angle reference; do not copy identity):"))
+                contents.append(types.Part(text="MODEL REFERENCE IMAGES (use ONLY as general body proportion reference; NEVER copy pose, camera angle or viewing direction; do not copy identity):"))
                 for img in pil_model_images:
                     contents.append(pil_to_part(img))
             
@@ -432,14 +464,16 @@ if generate_btn:
             attempt = 0
 
             with st.spinner("Gemini ile görseller üretiliyor..."):
-                chat = client.chats.create(
-                    model=model_name,
-                )
-                    
+            
                 while len(image_parts) < MIN_IMAGES and attempt < MAX_ATTEMPTS:
                     attempt += 1
-
+            
+                    chat = client.chats.create(
+                        model=model_name,
+                    )
+            
                     response = chat.send_message(contents)
+                    
 
                     # Bu çağrıdaki tüm görselleri al
                     candidates = getattr(response, "candidates", None)
