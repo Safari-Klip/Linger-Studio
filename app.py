@@ -3,7 +3,7 @@ from io import BytesIO
 import base64
 
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageOps
 from google import genai
 from google.genai import types
 
@@ -103,7 +103,10 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - NEVER use the pose direction, camera angle or viewing angle from model reference images.
 - The camera/view direction selected in the CURRENT USER REQUEST is the absolute source of truth.
 - The selected camera/view direction overrides the angle shown in all product and model reference images.
-- Use a natural, neutral e-commerce catalog pose with relaxed arms and realistic body posture.
+- Use natural and realistic body language appropriate to the selected scene.
+- For e-commerce studio scenes, use a neutral catalog pose with relaxed arms and realistic posture.
+- For lifestyle scenes, use relaxed candid fashion-editorial body language, natural weight distribution and subtle realistic movement.
+- Lifestyle poses must never become exaggerated, theatrical or overly fashion-forward.
 - Do NOT copy or replicate the exact identity.
 
 6. STRICT SEPARATION RULE
@@ -120,7 +123,8 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - Neutral, non-sexualized pose.
 - Product-focused composition.
 - Accurate garment representation.
-- The model should stand vertically in the image.
+- For e-commerce studio scenes, the model should stand vertically and clearly present the garment.
+- For lifestyle scenes, allow natural relaxed posture and subtle body movement while keeping the garment clearly visible.
 """
     
 def pil_to_part(img: Image.Image) -> types.Part:
@@ -185,29 +189,144 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
     # Ortam
     if scene_style == "E-commerce studio":
         parts.append(
-            "in a professional e-commerce studio, clean white seamless background, "
-            "even softbox lighting, no props"
-        )
-        
-    elif scene_style == "Lifestyle (plaj)":
-        parts.append(
-            "on a sunny sandy beach with turquoise sea in background, soft golden hour light, "
-            "relaxed vacation atmosphere"
+            "in a professional high-key e-commerce photography studio, "
+            "clean bright white seamless studio background, "
+            "bright and evenly illuminated backdrop, "
+            "professional softbox studio lighting on the model, "
+            "soft natural studio shadows only, "
+            "no gray background, no dark gray background, no beige background, "
+            "no colored background, no gradient backdrop, no moody lighting, "
+            "no dark corners, no props"
         )
     
     elif scene_style == "Lifestyle (yatak odası)":
         parts.append(
-            "in a cozy modern bedroom, soft natural window light, neutral colors"
+            "in a realistic premium bedroom environment appropriate for sleepwear photography, "
+            "the exact bedroom design and layout should vary naturally between generations, "
+            "and must follow any environment styling described in the user's extra notes, "
+            "it may feel like a modern home bedroom, refined contemporary bedroom, "
+            "minimal Scandinavian bedroom, warm cozy bedroom or softly styled feminine bedroom, "
+            "natural daylight, realistic textile and furniture textures, believable depth, "
+            "subtle lived-in details and slight natural imperfections, "
+            "the model should feel naturally present in the room rather than artificially posed, "
+            "the garment must remain clearly visible and be the visual focus, "
+            "do not repeat the exact same room layout, furniture arrangement or bed styling every time, "
+            "no CGI-like interior, no artificial showroom appearance, "
+            "no excessive decoration, no overly perfect symmetry"
+        )
+    
+    elif scene_style == "Lifestyle (salon / ev içi)":
+        parts.append(
+            "in a realistic stylish contemporary home living space appropriate for premium sleepwear, "
+            "with believable furniture, soft textiles and natural architectural depth, "
+            "the exact decor, furniture arrangement and styling should vary between generations "
+            "and follow the user's extra notes, "
+            "soft natural daylight, warm neutral interior atmosphere, "
+            "relaxed candid body language, as if captured during a genuine moment at home, "
+            "garment remains clearly visible and is the main focus, "
+            "no staged furniture showroom look, no CGI-like interior, "
+            "no excessive luxury styling or unnatural symmetry"
+        )
+    
+    elif scene_style == "Lifestyle (otel odası)":
+        parts.append(
+            "in a realistic premium hotel room or boutique hotel suite, "
+            "refined but believable interior design, high-quality bedding and subtle architectural details, "
+            "the exact room design, materials, lighting and furniture should vary naturally "
+            "and follow the user's extra notes, "
+            "soft window daylight or elegant diffused hotel lighting, "
+            "relaxed candid fashion photography, natural body language, "
+            "garment remains clearly visible and is the visual focus, "
+            "no exaggerated five-star fantasy interior, no CGI look, "
+            "no overly staged or perfectly symmetrical composition"
+        )
+    
+    elif scene_style == "Lifestyle (pencere önü / sabah ışığı)":
+        parts.append(
+            "near a large window in a realistic home or hotel interior, "
+            "soft natural morning daylight entering from the side, "
+            "subtle realistic highlights and shadows, "
+            "the surrounding interior should vary naturally and follow the user's extra notes, "
+            "quiet morning-routine feeling, relaxed candid posture, "
+            "natural weight distribution and believable facial expression, "
+            "garment remains clearly visible and is the main focus, "
+            "no artificial glow, no overexposed window, no dramatic fashion pose"
+        )
+    
+    elif scene_style == "Lifestyle (balkon / teras)":
+        parts.append(
+            "on a realistic private balcony or terrace connected to a stylish home or hotel, "
+            "soft natural daylight, believable outdoor depth and subtle environmental details, "
+            "the architecture, furniture and surrounding atmosphere should vary naturally "
+            "and follow the user's extra notes, "
+            "relaxed morning or evening-at-home feeling, candid natural body language, "
+            "garment remains clearly visible and is the main focus, "
+            "no fantasy resort look, no exaggerated sunset, no artificial CGI scenery"
+        )
+    
+    elif scene_style == "Lifestyle (okuma köşesi)":
+        parts.append(
+            "in a realistic comfortable reading corner inside a contemporary home or hotel, "
+            "with a chair, sofa or subtle soft furnishing elements where appropriate, "
+            "the exact setting and decor should vary and follow the user's extra notes, "
+            "soft natural daylight, intimate but non-sexual everyday atmosphere, "
+            "relaxed candid posture and realistic body language, "
+            "garment remains clearly visible and is the main focus, "
+            "no theatrical posing, no artificial staged showroom look"
+        )
+    
+    elif scene_style == "Lifestyle (mutfak / kahvaltı)":
+        parts.append(
+            "in a realistic contemporary kitchen or breakfast area during a relaxed morning routine, "
+            "soft natural daylight, believable everyday home details, "
+            "the interior style, counter materials and background elements should vary naturally "
+            "and follow the user's extra notes, "
+            "candid relaxed body language as if captured during a real morning at home, "
+            "garment remains clearly visible and is the main focus, "
+            "no cluttered commercial kitchen, no advertising-set appearance, no CGI interior"
+        )
+    
+    elif scene_style == "Lifestyle (tatil evi / cozy cabin)":
+        parts.append(
+            "inside a realistic stylish holiday home, countryside house or cozy cabin environment, "
+            "natural materials, soft textiles and believable architectural details, "
+            "the exact location and styling should vary naturally and follow the user's extra notes, "
+            "soft natural daylight and relaxed lived-in atmosphere, "
+            "candid premium lifestyle photography, natural body posture, "
+            "garment remains clearly visible and is the visual focus, "
+            "no fantasy cabin, no excessive rustic decoration, no CGI-like environment"
+        )
+    
+    elif scene_style == "Lifestyle (plaj)":
+        parts.append(
+            "on a real natural beach with believable sand and sea tones, "
+            "natural daylight with realistic highlights and shadows, "
+            "subtle wind movement in hair and fabric, "
+            "the beach environment and composition should vary naturally "
+            "and follow the user's extra notes, "
+            "relaxed candid body language as if captured during a genuine vacation moment, "
+            "garment remains clearly visible and is the main focus, "
+            "no artificial tropical postcard look, no oversaturated turquoise water, "
+            "no exaggerated golden glow, no CGI scenery, no dramatic fashion pose"
         )
     
     elif scene_style == "Lifestyle (spor salonu)":
         parts.append(
-            "in a bright modern gym interior, clean and minimal environment"
+            "in a realistic premium contemporary fitness or wellness studio, "
+            "natural architectural depth, authentic materials and believable equipment placement, "
+            "the exact studio environment should vary naturally and follow the user's extra notes, "
+            "soft diffused daylight combined with subtle professional interior lighting, "
+            "relaxed natural body language as if captured between movements, "
+            "garment remains clearly visible and is the main focus, "
+            "no excessive neon lighting, no glossy CGI environment, "
+            "no exaggerated athletic pose"
         )
     
     else:
         parts.append(
-            "in a minimal, softly lit neutral background"
+            "in a minimal softly lit neutral environment, "
+            "clean understated styling, realistic depth and natural soft lighting, "
+            "with no distracting props or artificial CGI appearance"
         )
 
     # Ürün açıklaması
@@ -255,8 +374,17 @@ def decode_gemini_image(part):
     return Image.open(BytesIO(image_bytes))
 
 
-def part_to_streamlit_image(part):
-    img = decode_gemini_image(part)
+def part_to_streamlit_image(part, force_size=None):
+    img = decode_gemini_image(part).convert("RGB")
+
+    if force_size:
+        img = ImageOps.fit(
+            img,
+            force_size,
+            method=Image.Resampling.LANCZOS,
+            centering=(0.5, 0.5),
+        )
+
     buf = BytesIO()
     img.save(buf, "PNG")
     buf.seek(0)
@@ -304,16 +432,23 @@ with st.sidebar:
         "Sahne / ortam",
         [
             "E-commerce studio",
-            "Lifestyle (plaj)",
             "Lifestyle (yatak odası)",
+            "Lifestyle (salon / ev içi)",
+            "Lifestyle (otel odası)",
+            "Lifestyle (pencere önü / sabah ışığı)",
+            "Lifestyle (balkon / teras)",
+            "Lifestyle (okuma köşesi)",
+            "Lifestyle (mutfak / kahvaltı)",
+            "Lifestyle (tatil evi / cozy cabin)",
+            "Lifestyle (plaj)",
             "Lifestyle (spor salonu)",
             "Minimal (nötr arka plan)",
         ],
     )
 
     aspect_ratio = st.selectbox(
-        "Görsel oranı (şimdilik sadece prompt'ta kullanılıyor)",
-        ["1:1","4:5", "3:4", "9:16", "16:9","5:6","10:13"],
+        "Görsel oranı",
+        ["1:1", "4:5", "3:4", "9:16", "16:9", "5:6", "1200x1560 px"],
     )
 
     resolution = st.selectbox(
@@ -390,7 +525,8 @@ if generate_btn:
 
             # 2) Prompt'u hazırla - gender_en parametresini ekledik
             base_prompt = build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, gender_en)
-            base_prompt += f", aspect ratio {aspect_ratio}, target resolution {resolution}."
+            prompt_aspect_ratio = "10:13" if aspect_ratio == "1200x1560 px" else aspect_ratio
+            base_prompt += f", aspect ratio {prompt_aspect_ratio}, target resolution {resolution}."
             if side_view == "Ön":
                 base_prompt += """
             ABSOLUTE CAMERA VIEW REQUIREMENT:
@@ -504,7 +640,8 @@ if generate_btn:
                 cols = st.columns(len(image_parts))
                 for idx, (col, part) in enumerate(zip(cols, image_parts)):
                     with col:
-                        buf = part_to_streamlit_image(part)
+                        force_size = (1200, 1560) if aspect_ratio == "1200x1560 px" else None
+                        buf = part_to_streamlit_image(part, force_size=force_size)
                         st.image(buf, caption=f"Sonuç #{idx+1}")
                         st.download_button(
                             label="🔽 İndir",
