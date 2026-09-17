@@ -3,7 +3,7 @@ from io import BytesIO
 import base64
 
 import streamlit as st
-from PIL import Image, ImageOps
+from PIL import Image
 from google import genai
 from google.genai import types
 
@@ -146,7 +146,10 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
     if shot_type == "Full body":
         parts.append(
             f"full body fashion shot of a {gender_en} model, standing naturally, "
-            "entire outfit visible from head to toe, eyes,head and feet fully in frame, balanced proportions, "
+            "entire outfit visible from head to toe, full head, hair and feet completely visible, "
+            "leave a small comfortable margin above the head and a minimal margin below the feet, "
+            "do not crop the top of the head, hair, chin, toes or heels, "
+            "balanced proportions, centered subject, tight but comfortable framing, "
             "catalog-style composition"
         )
 
@@ -378,12 +381,36 @@ def part_to_streamlit_image(part, force_size=None):
     img = decode_gemini_image(part).convert("RGB")
 
     if force_size:
-        img = ImageOps.fit(
-            img,
-            force_size,
-            method=Image.Resampling.LANCZOS,
-            centering=(0.5, 0.5),
+        target_w, target_h = force_size
+
+        # Görselin en-boy oranını koruyarak hedef alana sığdır.
+        # Crop veya stretch yapılmaz.
+        scale = min(
+            target_w / img.width,
+            target_h / img.height
         )
+
+        new_w = round(img.width * scale)
+        new_h = round(img.height * scale)
+
+        img = img.resize(
+            (new_w, new_h),
+            Image.Resampling.LANCZOS
+        )
+
+        # Kesmeden tam hedef ölçüde beyaz canvas oluştur.
+        canvas = Image.new(
+            "RGB",
+            (target_w, target_h),
+            "white"
+        )
+
+        # Görseli canvas'ın ortasına yerleştir.
+        x = (target_w - new_w) // 2
+        y = (target_h - new_h) // 2
+
+        canvas.paste(img, (x, y))
+        img = canvas
 
     buf = BytesIO()
     img.save(buf, "PNG")
