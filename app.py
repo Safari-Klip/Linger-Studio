@@ -99,15 +99,20 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - Do NOT reuse or imitate the face, body, pose, hairstyle, skin tone, or identity of the model shown.
 
 5. MODEL REFERENCE HANDLING
-- If separate model reference images are provided, use them ONLY as a general reference for body proportions.
+- If separate model reference images are provided, use them as the primary visual reference for the model's overall appearance.
+- Preserve the general age range, skin tone, hair color, hair texture, hairstyle direction, facial characteristics, body proportions and overall visual type shown in the model reference.
+- The generated model should strongly resemble the visual characteristics of the provided model reference while remaining a newly generated person.
 - NEVER use the pose direction, camera angle or viewing angle from model reference images.
 - The camera/view direction selected in the CURRENT USER REQUEST is the absolute source of truth.
 - The selected camera/view direction overrides the angle shown in all product and model reference images.
 - Use natural and realistic body language appropriate to the selected scene.
-- For e-commerce studio scenes, use a neutral catalog pose with relaxed arms and realistic posture.
-- For lifestyle scenes, use relaxed candid fashion-editorial body language, natural weight distribution and subtle realistic movement.
-- Lifestyle poses must never become exaggerated, theatrical or overly fashion-forward.
-- Do NOT copy or replicate the exact identity.
+- For e-commerce studio scenes, use clean product-focused catalog body language, but avoid unnaturally stiff or mannequin-like posture.
+- For e-commerce lifestyle scenes, always keep a clean bright white e-commerce studio background, while using product-focused but naturally candid body language, relaxed hands and arms, natural weight distribution and subtle realistic movement.
+- For lifestyle scenes, use genuinely relaxed candid body language, natural asymmetry, believable weight distribution and subtle interaction with the environment.
+- Lifestyle poses must feel naturally observed rather than deliberately posed.
+- Avoid rigid symmetry, mannequin-like posture, frozen hands and artificial fashion posing in lifestyle scenes.
+- The selected camera direction controls the viewing angle, but it must not force stiff body language in lifestyle scenes.
+- Do not copy the exact identity pixel-for-pixel; preserve the model reference's overall visual characteristics while generating a new realistic person.
 
 6. STRICT SEPARATION RULE
 - The garment and the model are two fully independent entities.
@@ -115,16 +120,19 @@ CRITICAL INSTRUCTIONS – MUST BE FOLLOWED:
 - Model appearance comes ONLY from model reference images, if provided, and prompt instructions.
 
 7. MODEL GENERATION RULE
-- Always generate a DIFFERENT {gender_en} model wearing the same garment.
-- Never reuse the same model identity across generations unless explicitly instructed.
+- If model reference images are provided, keep the generated model visually consistent with those references.
+- Preserve the same overall model type, approximate age range, skin tone, hair characteristics, facial character and body proportions.
+- Do not let the product reference image influence the model's identity or appearance.
+- If no model reference image is provided, generate a new realistic {gender_en} model.
 
 8. OUTPUT STYLE
-- Professional e-commerce fashion catalog photography.
-- Neutral, non-sexualized pose.
+- Professional fashion photography appropriate to the selected scene.
+- Natural, non-sexualized body language.
 - Product-focused composition.
 - Accurate garment representation.
-- For e-commerce studio scenes, the model should stand vertically and clearly present the garment.
-- For lifestyle scenes, allow natural relaxed posture and subtle body movement while keeping the garment clearly visible.
+- For e-commerce studio scenes, use a clean polished catalog presentation.
+- For e-commerce lifestyle scenes, combine a clean white e-commerce studio presentation with natural relaxed lifestyle body language.
+- For lifestyle scenes, prioritize believable candid photography while keeping the garment clearly visible.
 """
     
 def pil_to_part(img: Image.Image) -> types.Part:
@@ -200,6 +208,22 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
             "no gray background, no dark gray background, no beige background, "
             "no colored background, no gradient backdrop, no moody lighting, "
             "no dark corners, no props"
+        )
+    elif scene_style == "E-commerce lifestyle":
+        parts.append(
+            "in a professional high-key e-commerce photography studio, "
+            "clean bright white seamless studio background, "
+            "bright and evenly illuminated backdrop, "
+            "professional softbox studio lighting, "
+            "soft natural studio shadows only, "
+            "the garment must remain clearly visible and be the main visual focus, "
+            "natural relaxed body language, realistic weight distribution, "
+            "relaxed hands and arms, natural asymmetry and subtle believable movement, "
+            "the model should feel naturally photographed rather than rigidly posed, "
+            "avoid stiff catalog posing, mannequin-like posture and rigid symmetry, "
+            "no gray background, no dark gray background, no beige background, "
+            "no colored background, no gradient backdrop, no props, "
+            "no exaggerated editorial pose"
         )
     
     elif scene_style == "Lifestyle (yatak odası)":
@@ -341,16 +365,51 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
         "The garment must be clearly visible, accurate to the written description and realistically fitted to the body."
     )
 
-    # Ek notlar
+    # Genel stil
+    if scene_style == "E-commerce studio":
+        parts.append(
+            "high-end professional e-commerce photography, "
+            "clean product-focused presentation, realistic skin texture, natural body shape, "
+            "accurate fabric details, no heavy retouch, professional studio lighting, "
+            "shot on a high-resolution camera."
+        )
+    
+    elif scene_style == "E-commerce lifestyle":
+        parts.append(
+            "premium professional e-commerce photography on a clean bright white studio background, "
+            "product-focused but naturally candid composition, "
+            "relaxed realistic body language, natural asymmetry and subtle movement, "
+            "realistic skin texture, natural body shape, accurate fabric details, "
+            "no heavy retouch, avoid stiff catalog posing and mannequin-like posture, "
+            "shot on a high-resolution camera."
+        )
+    
+    elif scene_style.startswith("Lifestyle"):
+        parts.append(
+            "premium realistic lifestyle fashion photography, "
+            "candid naturally observed body language, "
+            "natural asymmetry in shoulders, hips, arms and weight distribution, "
+            "relaxed hands, subtle believable movement and interaction with the environment, "
+            "realistic skin texture, natural body shape, accurate fabric details, "
+            "no heavy retouch, avoid stiff catalog posing, rigid symmetry and mannequin-like posture, "
+            "shot on a high-resolution camera."
+        )
+    
+    else:
+        parts.append(
+            "premium realistic fashion photography, "
+            "natural body language, realistic skin texture and natural body shape, "
+            "accurate fabric details, no heavy retouch, "
+            "shot on a high-resolution camera."
+        )
+    
+    # Ek notlar - kullanıcının son styling talebi
     if extra_notes:
-        parts.append(extra_notes)
-
-    # Genel stil – iç giyim katalog dili
-    parts.append(
-        "high-end lingerie catalog photography, realistic skin texture, natural body shape, "
-        "accurate fabric details, no heavy retouch, soft professional lighting, "
-        "shot on a high-resolution camera."
-    )
+        parts.append(
+            f"CURRENT USER STYLING AND POSE REQUEST: {extra_notes}. "
+            "Follow these instructions carefully as long as they do not conflict with garment accuracy "
+            "or the selected camera direction."
+        )
 
     return ", ".join(parts)
 
@@ -459,6 +518,7 @@ with st.sidebar:
         "Sahne / ortam",
         [
             "E-commerce studio",
+            "E-commerce lifestyle",
             "Lifestyle (yatak odası)",
             "Lifestyle (salon / ev içi)",
             "Lifestyle (otel odası)",
@@ -554,34 +614,76 @@ if generate_btn:
             base_prompt = build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, gender_en)
             prompt_aspect_ratio = "10:13" if aspect_ratio == "1200x1560 px" else aspect_ratio
             base_prompt += f", aspect ratio {prompt_aspect_ratio}, target resolution {resolution}."
+            is_lifestyle_scene = (
+                scene_style == "E-commerce lifestyle"
+                or scene_style.startswith("Lifestyle")
+            )
+            
             if side_view == "Ön":
-                base_prompt += """
-            ABSOLUTE CAMERA VIEW REQUIREMENT:
-            FRONT VIEW ONLY.
-            The model must face directly toward the camera.
-            Both shoulders and both hips must face forward symmetrically.
-            Do not use a three-quarter view, side view or rotated body pose.
-            Ignore the camera angle and pose shown in ALL reference images.
-            """
+                if is_lifestyle_scene:
+                    base_prompt += """
+                    CAMERA VIEW REQUIREMENT:
+                    FRONT VIEW.
+                    Keep the model primarily oriented toward the camera so the front of the garment is clearly visible.
+                    Allow natural asymmetry in shoulders, hips, arms, hands and weight distribution.
+                    The model may shift weight onto one leg, slightly bend the arms, sit naturally,
+                    interact subtly with the environment or appear in gentle natural movement.
+                    Do not rotate into a clear three-quarter, side or back view.
+                    Avoid rigid symmetry, mannequin-like posture and stiff catalog posing.
+                    Ignore the camera angle and pose shown in ALL reference images.
+                    """
+                else:
+                    base_prompt += """
+                    ABSOLUTE CAMERA VIEW REQUIREMENT:
+                    FRONT VIEW ONLY.
+                    The model must face directly toward the camera.
+                    Both shoulders and both hips must face forward symmetrically.
+                    Do not use a three-quarter view, side view or rotated body pose.
+                    Ignore the camera angle and pose shown in ALL reference images.
+                    """
             
             elif side_view == "Sol çapraz":
-                base_prompt += """
-            ABSOLUTE CAMERA VIEW REQUIREMENT:
-            LEFT THREE-QUARTER VIEW ONLY.
-            The model must be turned approximately 30-45 degrees to show the front and left side.
-            Do not use a straight front, right three-quarter, profile or back view.
-            Ignore the camera angle and pose shown in ALL reference images.
-            """
+                if is_lifestyle_scene:
+                    base_prompt += """
+                    CAMERA VIEW REQUIREMENT:
+                    LEFT THREE-QUARTER VIEW.
+                    Keep a clear left three-quarter orientation, approximately 30-45 degrees.
+                    Allow natural weight distribution, relaxed arms and hands, subtle asymmetry
+                    and believable interaction with the environment.
+                    Do not turn into a straight front, right three-quarter, profile or back view.
+                    Avoid stiff catalog posing and mannequin-like body language.
+                    Ignore the camera angle and pose shown in ALL reference images.
+                    """
+                else:
+                    base_prompt += """
+                    ABSOLUTE CAMERA VIEW REQUIREMENT:
+                    LEFT THREE-QUARTER VIEW ONLY.
+                    The model must be turned approximately 30-45 degrees to show the front and left side.
+                    Do not use a straight front, right three-quarter, profile or back view.
+                    Ignore the camera angle and pose shown in ALL reference images.
+                    """
             
             elif side_view == "Arka":
-                base_prompt += """
-            ABSOLUTE CAMERA VIEW REQUIREMENT:
-            BACK VIEW ONLY.
-            The model must face directly away from the camera.
-            The back of the garment must be clearly visible.
-            Do not use a front, three-quarter front or side view.
-            Ignore the camera angle and pose shown in ALL reference images.
-            """
+                if is_lifestyle_scene:
+                    base_prompt += """
+                    CAMERA VIEW REQUIREMENT:
+                    BACK VIEW.
+                    Keep the model primarily oriented away from the camera so the back of the garment remains clearly visible.
+                    Allow natural asymmetry, relaxed arms and hands, realistic weight distribution
+                    and subtle interaction with the environment.
+                    Do not rotate enough to become a front or clear three-quarter front view.
+                    Avoid rigid symmetrical posing and mannequin-like posture.
+                    Ignore the camera angle and pose shown in ALL reference images.
+                    """
+                else:
+                    base_prompt += """
+                    ABSOLUTE CAMERA VIEW REQUIREMENT:
+                    BACK VIEW ONLY.
+                    The model must face directly away from the camera.
+                    The back of the garment must be clearly visible.
+                    Do not use a front, three-quarter front or side view.
+                    Ignore the camera angle and pose shown in ALL reference images.
+                    """
                 
             # --- Görselleri oku (PIL) ---
             pil_product_images = [Image.open(f) for f in (product_files or [])[:3]]
@@ -610,7 +712,7 @@ if generate_btn:
             
             # 6) Manken görselleri (sadece manken referansı için)
             if pil_model_images:
-                contents.append(types.Part(text="MODEL REFERENCE IMAGES (use ONLY as general body proportion reference; NEVER copy pose, camera angle or viewing direction; do not copy identity):"))
+                contents.append(types.Part(text="MODEL REFERENCE IMAGES (use as the primary visual reference for the model's overall appearance, including approximate age range, skin tone, hair characteristics, facial characteristics and body proportions; NEVER copy pose, camera angle or viewing direction; always follow the selected camera direction):"))
                 for img in pil_model_images:
                     contents.append(pil_to_part(img))
             
