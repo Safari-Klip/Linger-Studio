@@ -204,7 +204,6 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
             "clean bright white seamless studio background, "
             "bright and evenly illuminated backdrop, "
             "professional softbox studio lighting on the model, "
-            "soft natural studio shadows only, "
             "no gray background, no dark gray background, no beige background, "
             "no colored background, no gradient backdrop, no moody lighting, "
             "no dark corners, no props"
@@ -215,7 +214,6 @@ def build_prompt(product_text, shot_type, side_view, scene_style, extra_notes, g
             "clean bright white seamless studio background, "
             "bright and evenly illuminated backdrop, "
             "professional softbox studio lighting, "
-            "soft natural studio shadows only, "
             "the garment must remain clearly visible and be the main visual focus, "
             "natural relaxed body language, realistic weight distribution, "
             "relaxed hands and arms, natural asymmetry and subtle believable movement, "
@@ -442,9 +440,8 @@ def part_to_streamlit_image(part, force_size=None):
     if force_size:
         target_w, target_h = force_size
 
-        # Görselin en-boy oranını koruyarak hedef alana sığdır.
-        # Crop veya stretch yapılmaz.
-        scale = min(
+        # Görseli beyaz boşluk bırakmadan hedef alana yerleştir.
+        scale = max(
             target_w / img.width,
             target_h / img.height
         )
@@ -457,24 +454,22 @@ def part_to_streamlit_image(part, force_size=None):
             Image.Resampling.LANCZOS
         )
 
-        # Kesmeden tam hedef ölçüde beyaz canvas oluştur.
-        canvas = Image.new(
-            "RGB",
-            (target_w, target_h),
-            "white"
-        )
+        # Görseli ortadan kırparak hedef ölçüye getir.
+        left = (new_w - target_w) // 2
+        top = (new_h - target_h) // 2
 
-        # Görseli canvas'ın ortasına yerleştir.
-        x = (target_w - new_w) // 2
-        y = (target_h - new_h) // 2
-
-        canvas.paste(img, (x, y))
-        img = canvas
+        img = img.crop((
+            left,
+            top,
+            left + target_w,
+            top + target_h
+        ))
 
     buf = BytesIO()
     img.save(buf, "PNG")
     buf.seek(0)
     return buf
+
 
 
 # =========================
@@ -723,7 +718,7 @@ if generate_btn:
             # Minimum 3 görsel üret, fazlası gelirse hepsini göster
 
             MIN_IMAGES = 3
-            MAX_ATTEMPTS = 5
+            MAX_ATTEMPTS = 3
 
             image_parts = []
             attempt = 0
@@ -777,6 +772,7 @@ if generate_btn:
                             data=buf,
                             file_name=f"gemini_output_{idx+1}.png",
                             mime="image/png",
+                            on_click="ignore",
                         )
 
         except Exception as e:
